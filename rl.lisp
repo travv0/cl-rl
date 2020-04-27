@@ -37,6 +37,7 @@
     display)
   "a list of all system names in the order they should run")
 
-(defun update (display-function)
+(defun update (display-function action)
+  (format t "Got action: ~a~%" action)
   (let ((*display-function* display-function))
     (mapc #'do-system *systems*)))
