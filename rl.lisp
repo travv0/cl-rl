@@ -32,6 +32,11 @@
     (velocity :x 1 :y 1 :z 0)
     (visible :char #\@ :color :white)))
 
+(defparameter *systems*
+  '(move
+    display)
+  "a list of all system names in the order they should run")
+
 (defun update (display-function)
   (let ((*display-function* display-function))
-    (cycle-systems)))
+    (mapc #'do-system *systems*)))
