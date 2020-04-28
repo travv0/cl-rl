@@ -12,9 +12,9 @@
 (defcomponent visible (char color))
 
 (defsys move ((position velocity) (e))
-  (incf (position/x e) (velocity/x e))
-  (incf (position/y e) (velocity/y e))
-  (incf (position/z e) (velocity/z e)))
+  (incf (position/x e) (round (velocity/x e)))
+  (incf (position/y e) (round (velocity/y e)))
+  (incf (position/z e) (round (velocity/z e))))
 
 (defsys apply-friction ((velocity) (e))
   (decf (velocity/x e) (* (velocity/x e) (friction/amount e)))
@@ -22,6 +22,7 @@
 
 (defvar *display-function*
   (lambda (x y char color)
+    (declare (ignore x y char color))
     (error "*display-function* must be set to a function that draws entities"))
   "function that displays entites")
 
@@ -36,7 +37,7 @@
   (progn (when *player*
            (remove-entity *player*))
          (add-entity nil
-           (position :x 50 :y 50 :z 0)
+           (position :x 50 :y 20 :z 0)
            (velocity :x 0 :y 0 :z 0)
            (friction :amount 1)
            (visible :char #\@ :color :white))))
@@ -49,14 +50,15 @@
 
 (defun update (display-function action)
   (case action
+    ((nil))
     (:move-left (setf (velocity/x *player*) -1))
     (:move-up (setf (velocity/y *player*) -1))
     (:move-right (setf (velocity/x *player*) 1))
     (:move-down (setf (velocity/y *player*) 1))
-    (:move-up-left (setf (velocity/x *player*) -1) (setf (velocity/y *player*) -1))
-    (:move-up-right (setf (velocity/x *player*) 1) (setf (velocity/y *player*) -1))
-    (:move-down-left (setf (velocity/x *player*) -1) (setf (velocity/y *player*) 1))
-    (:move-down-right (setf (velocity/x *player*) 1) (setf (velocity/y *player*) 1))
+    (:move-up-left (setf (velocity/x *player*) -1 (velocity/y *player*) -1))
+    (:move-up-right (setf (velocity/x *player*) 1 (velocity/y *player*) -1))
+    (:move-down-left (setf (velocity/x *player*) -1 (velocity/y *player*) 1))
+    (:move-down-right (setf (velocity/x *player*) 1 (velocity/y *player*) 1))
     (t (cerror "continue" "unknown action: ~a" action)))
 
   (let ((*display-function* display-function))
