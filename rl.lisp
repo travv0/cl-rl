@@ -2,38 +2,31 @@
 
 (in-package #:rl)
 
-(init-ecs)
+(defclass game-object () ())
 
-(defcomponent position (x y z))
-(defcomponent velocity (x y z))
+(defclass pos ()
+  ((x :initarg :x :initform 0 :accessor x)
+   (y :initarg :y :initform 0 :accessor y)))
 
-(defcomponent friction (amount))
+(defclass vel ()
+  ((dx :initarg :dx :initform 0 :accessor dx)
+   (dy :initarg :dy :initform 0 :accessor dy)))
 
-(defcomponent visible (char color))
+(defclass visible ()
+  ((char :initarg :char :accessor display-char)
+   (color :initarg :color :initform :white :accessor display-color)))
 
-(defcomponent player ())
-(defcomponent solid ())
+(defclass player (game-object pos vel visible) ())
 
-(defcomponent colliding (entity))
+(defgeneric update (game-object)
+  (:documentation "What the object should do each tick."))
 
-(defsys move ((position velocity) (e))
-  (incf (position/x e) (round (velocity/x e)))
-  (incf (position/y e) (round (velocity/y e)))
-  (incf (position/z e) (round (velocity/z e))))
+(defmethod update ((obj game-object))
+  (when (typep obj '(and pos vel))
+    (incf (x obj) (round (dx obj)))
+    (incf (y obj) (round (dy obj)))))
 
-(defsys apply-friction ((velocity) (e))
-  (decf (velocity/x e) (* (velocity/x e) (friction/amount e)))
-  (decf (velocity/y e) (* (velocity/y e) (friction/amount e))))
-
-(defsys reset-collisions ((colliding) (e))
-  (remove-component e 'colliding))
-
-(defsys collision-check ((position solid) (e1 e2))
-  (when (and (= (position/x e1) (position/x e2))
-             (= (position/y e1) (position/y e2)))
-    (format t "~a is colliding with ~a~%" e1 e2)
-    (add-component e1 'colliding (list :entity e2))
-    (add-component e2 'colliding (list :entity e1))))
+(defclass wall (game-object pos visible) ())
 
 (defvar *display-function*
   (lambda (x y char color)
@@ -41,62 +34,44 @@
     (error "*display-function* must be set to a function that draws entities"))
   "function that displays entites")
 
-(defsys display ((position visible) (e))
+(defmethod display ((obj game-object))
   (funcall *display-function*
-           (position/x e)
-           (position/y e)
-           (visible/char e)
-           (visible/color e)))
+           (x obj)
+           (y obj)
+           (display-char obj)
+           (display-color obj)))
 
 (defparameter *player*
-  (progn (when *player*
-           (remove-entity *player*))
-         (add-entity nil
-           (player)
-           (solid)
-           (position :x 50 :y 20 :z 0)
-           (velocity :x 0 :y 0 :z 0)
-           (friction :amount 1)
-           (visible :char #\@ :color :white))))
+  (make-instance 'player :x 50 :y 20 :color :white :char #\@))
 
-(defparameter *systems*
-  '(reset-collisions
-    move
-    collision-check
-    apply-friction
-    display)
-  "a list of all system names in the order they should run")
+(defparameter *game-objects* '())
 
-(serapeum:defconst key-y (char-code #\y))
-(serapeum:defconst key-u (char-code #\u))
-(serapeum:defconst key-h (char-code #\h))
-(serapeum:defconst key-j (char-code #\j))
-(serapeum:defconst key-k (char-code #\k))
-(serapeum:defconst key-l (char-code #\l))
-(serapeum:defconst key-b (char-code #\b))
-(serapeum:defconst key-n (char-code #\n))
-(serapeum:defconst key-up 259)
-(serapeum:defconst key-left 260)
-(serapeum:defconst key-down 258)
-(serapeum:defconst key-right 261)
+(define-condition quit-condition () ())
 
-(defun update (display-function key-code &optional init)
+(defun tick (display-function key-code &optional init)
   (when init
-    (init-floor))
+    (init-floor)
+    (setf *player*
+          (make-instance 'player :x 50 :y 20 :color :white :char #\@))
+    (setf *game-objects* '())
+    (push *player* *game-objects*))
   (case key-code
     ((nil))
-    (#.(list key-h key-left) (setf (velocity/x *player*) -1))
-    (#.(list key-k key-up) (setf (velocity/y *player*) -1))
-    (#.(list key-l key-right) (setf (velocity/x *player*) 1))
-    (#.(list key-j key-down) (setf (velocity/y *player*) 1))
-    (#.key-y (setf (velocity/x *player*) -1 (velocity/y *player*) -1))
-    (#.key-u (setf (velocity/x *player*) 1 (velocity/y *player*) -1))
-    (#.key-b (setf (velocity/x *player*) -1 (velocity/y *player*) 1))
-    (#.key-n (setf (velocity/x *player*) 1 (velocity/y *player*) 1))
+    (:move-left (setf (dx *player*) -1))
+    (:move-up (setf (dy *player*) -1))
+    (:move-right (setf (dx *player*) 1))
+    (:move-down (setf (dy *player*) 1))
+    (:move-up-left (setf (dx *player*) -1 (dy *player*) -1))
+    (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
+    (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
+    (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
+    (:quit (error 'quit-condition))
     (t (format t "Unknown key: ~a (~d)~%" (code-char key-code) key-code)))
 
-  (let ((*display-function* display-function))
-    (mapc #'do-system *systems*)))
+  (dolist (obj *game-objects*)
+    (update obj)
+    (let ((*display-function* display-function))
+      (display obj))))
 
 (defun init-floor ()
   (let ((stage (dungen:make-stage :density 1
@@ -112,7 +87,4 @@
                       (make-wall x y)))))))
 
 (defun make-wall (x y)
-  (add-entity nil
-    (position :x x :y y :z 0)
-    (solid)
-    (visible :char #\# :color :white)))
+  (make-instance 'wall :x x :y y :char #\#))

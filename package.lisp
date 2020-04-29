@@ -1,6 +1,6 @@
 ;;;; package.lisp
 
 (defpackage #:rl
-  (:use #:cl #:cl-ecs)
+  (:use #:cl #:box.ecs)
   (:export #:*display-function*
            #:update))
