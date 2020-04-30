@@ -2,5 +2,9 @@
 
 (defpackage #:rl
   (:use #:cl #:box.ecs)
+  (:import-from #:alexandria
+                #:when-let)
   (:export #:*display-function*
-           #:update))
+           #:tick
+           #:initialize
+           #:error-condition))
