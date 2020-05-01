@@ -13,6 +13,10 @@
 (defun pos (x y)
   (make-instance 'pos :x x :y y))
 
+(defmethod distance ((p1 pos) (p2 pos))
+  (sqrt (+ (expt (- (x p2) (x p1)) 2)
+           (expt (- (y p2) (y p1)) 2))))
+
 (defmethod sub ((p1 pos) (p2 pos))
   (make-instance 'pos :x (- (x p1) (x p2))
                       :y (- (y p1) (y p2))))
@@ -29,40 +33,52 @@
   (and (= (x p1) (x p2))
        (= (y p1) (y p2))))
 
-(defclass game-object ()
-  ((solid :initarg :solid :initform nil :accessor solid)))
-
-(defclass moveable-object (game-object pos)
+(defclass moveable (pos)
   ((dx :initarg :dx :initform 0 :accessor dx)
    (dy :initarg :dy :initform 0 :accessor dy)
    (friction :initarg :friction :initform 1 :accessor friction)))
 
-(defclass visible-object (game-object pos)
+(defclass visible (pos)
   ((char :initarg :char :accessor display-char)))
 
-(defclass creature (moveable-object visible-object)
-  ((solid :initform t)))
+(defclass solid () ())
 
-(defclass player (creature)
+(defclass inventory ()
+  ((inventory :initarg :inventory :initform '() :accessor inventory)))
+
+(defclass player (moveable visible solid inventory)
   ((char :initform #\@)))
+
+(defclass item (visible)
+  ((char :initform #\?)))
+
+(defclass weapon (item)
+  ((char :initform #\))))
+
+(defclass sword (weapon)
+  ())
 
 (defgeneric update (object)
   (:documentation "What the object should do each tick."))
 
-(defmethod update ((obj game-object)))
+(defmethod update (obj))
 
-(defmethod update ((obj moveable-object))
+(defmethod update :before ((obj moveable))
   (with-accessors ((x x) (y y)
                    (dx dx) (dy dy)
-                   (friction friction)
-                   (solid solid))
+                   (friction friction))
       obj
-    (when solid
-      (multiple-value-bind (other-obj last-pos) (check-collisions obj)
-        (when (and other-obj last-pos (solid other-obj))
-          (setf dx 0 dy 0
-                x (x last-pos)
-                y (y last-pos)))))
+    (loop with collisions = (sort (check-collisions obj) #'< :key (op (distance obj (cdr _))))
+          for collision in collisions do
+            (destructuring-bind (other-obj . last-pos) collision
+              (when (and (typep obj 'solid) other-obj last-pos (typep other-obj 'solid))
+                (setf dx 0 dy 0
+                      x (x last-pos)
+                      y (y last-pos))
+                (return))
+              (when (and other-obj (typep other-obj 'item) (typep obj 'inventory))
+                (push other-obj (inventory obj))
+                (setf *game-objects* (remove other-obj *game-objects*)))))
     (incf x (round dx))
     (incf y (round dy))
     (setf dx (- dx (* dx friction))
@@ -94,8 +110,9 @@
                     (setf current (pos (+ (x current) x-increment)
                                        (+ (y current) y-increment))))))))
 
-(defmethod check-collisions ((obj moveable-object))
-  (loop for other-obj in *game-objects*
+(defmethod check-collisions ((obj moveable))
+  (loop with collisions = '()
+        for other-obj in *game-objects*
         when (not (eq obj other-obj)) do
           (loop with previous-step = obj
                 for step in (get-line obj (pos (+ (x obj) (dx obj))
@@ -103,11 +120,11 @@
                                       :include-end t)
                 when (and (= (x step) (x other-obj))
                           (= (y step) (y other-obj)))
-                  do (return-from check-collisions (values other-obj previous-step))
-                do (setf previous-step step))))
+                  do (push (cons other-obj previous-step) collisions)
+                do (setf previous-step step))
+        finally (return collisions)))
 
-(defclass wall (visible-object)
-  ((solid :initform t)))
+(defclass wall (visible solid) ())
 
 (defvar *display-function*
   (lambda (x y char color)
@@ -115,7 +132,7 @@
     (error "*display-function* must be set to a function that draws entities"))
   "function that displays entites")
 
-(defmethod display ((obj visible-object))
+(defmethod display ((obj visible))
   (funcall *display-function*
            (x obj)
            (y obj)
@@ -123,7 +140,7 @@
            nil))
 
 (defparameter *player*
-  (make-instance 'player :x 50 :y 20 :char #\@))
+  (make-instance 'player :x 5 :y 1 :char #\@))
 
 (defparameter *game-objects* '())
 
@@ -133,8 +150,9 @@
   (setf *game-objects* '())
   (init-floor)
   (setf *player*
-        (make-instance 'player :x 50 :y 20 :char #\@))
-  (push *player* *game-objects*))
+        (make-instance 'player :x 5 :y 1 :char #\@))
+  (push *player* *game-objects*)
+  (push (make-instance 'sword :x 5 :y 5) *game-objects*))
 
 (defun tick (display-function key-code)
   (case key-code
@@ -151,8 +169,9 @@
     (t (format t "Unknown key: ~a (~d)~%" (code-char key-code) key-code)))
 
   (dolist (obj *game-objects*)
-    (update obj)
-    (let ((*display-function* display-function))
+    (update obj))
+  (let ((*display-function* display-function))
+    (dolist (obj *game-objects*)
       (display obj))))
 
 (defun init-floor ()

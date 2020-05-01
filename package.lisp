@@ -3,7 +3,10 @@
 (defpackage #:rl
   (:use #:cl #:box.ecs)
   (:import-from #:alexandria
-                #:when-let)
+                #:when-let
+                #:curry)
+  (:import-from #:serapeum
+                #:op)
   (:export #:*display-function*
            #:tick
            #:initialize
