@@ -41,7 +41,8 @@
 (defclass visible (pos)
   ((char :initarg :char :accessor display-char)
    (foreground-color :initarg :fg-color :accessor foreground-color :initform :white)
-   (background-color :initarg :bg-color :accessor background-color :initform :black)))
+   (background-color :initarg :bg-color :accessor background-color :initform :black)
+   (bold-color :initarg :bold :accessor bold-color :initform t)))
 
 (defclass solid () ())
 
@@ -130,11 +131,12 @@
         finally (return collisions)))
 
 (defclass wall (visible solid)
-  ((foreground-color :initform :cyan)))
+  ((foreground-color :initform :yellow)
+   (bold-color :initform nil)))
 
 (defvar *display-function*
-  (lambda (x y char color)
-    (declare (ignore x y char color))
+  (lambda (x y char fg-color bg-color bold)
+    (declare (ignore x y char fg-color bg-color bold))
     (error "*display-function* must be set to a function that draws entities"))
   "function that displays entites")
 
@@ -144,7 +146,8 @@
            (y obj)
            (display-char obj)
            (foreground-color obj)
-           (background-color obj)))
+           (background-color obj)
+           (bold-color obj)))
 
 (defparameter *player*
   (make-instance 'player :x 5 :y 1 :char #\@))
