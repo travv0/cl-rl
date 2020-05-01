@@ -64,6 +64,9 @@
 (defclass deleted ()
   ())
 
+(defclass running ()
+  ())
+
 (defgeneric update (object)
   (:documentation "What the object should do each tick."))
 
@@ -84,7 +87,13 @@
                 (return))
               (when (and other-obj (typep other-obj 'item) (typep obj 'inventory))
                 (push other-obj (inventory obj))
-                (ensure-mix other-obj 'deleted))))
+                (ensure-mix other-obj 'deleted)
+                (when (typep obj 'running)
+                  (setf x (x other-obj)
+                        y (y other-obj)
+                        dx 0 dy 0)
+                  (delete-from-mix obj 'running)
+                  (return)))))
     (incf x (round dx))
     (incf y (round dy))
     (setf dx (- dx (* dx friction))
@@ -179,14 +188,30 @@
       (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
       (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
       (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
-      (:run-left (setf (dx *player*) (- run-speed)))
-      (:run-up (setf (dy *player*) (- run-speed)))
-      (:run-right (setf (dx *player*) run-speed))
-      (:run-down (setf (dy *player*) run-speed))
-      (:run-up-left (setf (dx *player*) (- run-speed) (dy *player*) (- run-speed)))
-      (:run-up-right (setf (dx *player*) run-speed (dy *player*) (- run-speed)))
-      (:run-down-left (setf (dx *player*) (- run-speed) (dy *player*) run-speed))
-      (:run-down-right (setf (dx *player*) run-speed (dy *player*) run-speed))
+      (:run-left
+       (ensure-mix *player* 'running)
+       (setf (dx *player*) (- run-speed)))
+      (:run-up
+       (ensure-mix *player* 'running)
+       (setf (dy *player*) (- run-speed)))
+      (:run-right
+       (ensure-mix *player* 'running)
+       (setf (dx *player*) run-speed))
+      (:run-down
+       (ensure-mix *player* 'running)
+       (setf (dy *player*) run-speed))
+      (:run-up-left
+       (ensure-mix *player* 'running)
+       (setf (dx *player*) (- run-speed) (dy *player*) (- run-speed)))
+      (:run-up-right
+       (ensure-mix *player* 'running)
+       (setf (dx *player*) run-speed (dy *player*) (- run-speed)))
+      (:run-down-left
+       (ensure-mix *player* 'running)
+       (setf (dx *player*) (- run-speed) (dy *player*) run-speed))
+      (:run-down-right
+       (ensure-mix *player* 'running)
+       (setf (dx *player*) run-speed (dy *player*) run-speed))
       (:quit (error 'quit-condition))
       (t (format t "Unknown key: ~a (~d)~%" (code-char action) action))))
 
