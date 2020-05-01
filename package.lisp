@@ -1,7 +1,7 @@
 ;;;; package.lisp
 
 (defpackage #:rl
-  (:use #:cl #:box.ecs)
+  (:use #:cl #:box.ecs #:dynamic-mixins)
   (:import-from #:alexandria
                 #:when-let
                 #:curry)

@@ -58,6 +58,9 @@
 (defclass sword (weapon)
   ())
 
+(defclass deleted ()
+  ())
+
 (defgeneric update (object)
   (:documentation "What the object should do each tick."))
 
@@ -78,7 +81,7 @@
                 (return))
               (when (and other-obj (typep other-obj 'item) (typep obj 'inventory))
                 (push other-obj (inventory obj))
-                (setf *game-objects* (remove other-obj *game-objects*)))))
+                (ensure-mix other-obj 'deleted))))
     (incf x (round dx))
     (incf y (round dy))
     (setf dx (- dx (* dx friction))
@@ -170,6 +173,13 @@
 
   (dolist (obj *game-objects*)
     (update obj))
+
+  (setf *game-objects*
+        (loop for obj in *game-objects*
+              if (typep obj 'deleted)
+                do (delete-from-mix obj 'deleted)
+              else collect obj))
+
   (let ((*display-function* display-function))
     (dolist (obj *game-objects*)
       (display obj))))
