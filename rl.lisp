@@ -3,8 +3,8 @@
 (in-package #:rl)
 
 (defclass pos ()
-  ((x :initarg :x :initform 0 :accessor x)
-   (y :initarg :y :initform 0 :accessor y)))
+  ((%x :initarg :x :initform 0 :accessor x)
+   (%y :initarg :y :initform 0 :accessor y)))
 
 (defmethod print-object ((p pos) stream)
   (print-unreadable-object (p stream :type t)
@@ -34,32 +34,32 @@
        (= (y p1) (y p2))))
 
 (defclass moveable (pos)
-  ((dx :initarg :dx :initform 0 :accessor dx)
-   (dy :initarg :dy :initform 0 :accessor dy)
-   (friction :initarg :friction :initform 1 :accessor friction)))
+  ((%dx :initarg :dx :initform 0 :accessor dx)
+   (%dy :initarg :dy :initform 0 :accessor dy)
+   (%friction :initarg :friction :initform 1 :accessor friction)))
 
 (defclass visible (pos)
-  ((char :initarg :char :accessor display-char)
-   (foreground-color :initarg :fg-color :accessor foreground-color :initform :white)
-   (background-color :initarg :bg-color :accessor background-color :initform :black)
-   (bold-color :initarg :bold :accessor bold-color :initform t)))
+  ((%char :initarg :char :accessor display-char)
+   (%foreground-color :initarg :fg-color :accessor foreground-color :initform :white)
+   (%background-color :initarg :bg-color :accessor background-color :initform :black)
+   (%bold-color :initarg :bold :accessor bold-color :initform t)))
 
 (defclass solid () ())
 
 (defclass inventory ()
-  ((inventory :initarg :inventory :initform '() :accessor inventory)))
+  ((%inventory :initarg :inventory :initform '() :accessor inventory)))
 
 (defclass player (moveable visible solid inventory)
-  ((char :initform #\@)))
+  ((%char :initform #\@)))
 
 (defclass item (visible)
-  ((char :initform #\?)))
+  ((%char :initform #\?)))
 
 (defclass weapon (item)
-  ((char :initform #\))))
+  ((%char :initform #\))))
 
 (defclass sword (weapon)
-  ((foreground-color :initform :magenta)))
+  ((%foreground-color :initform :magenta)))
 
 (defclass deleted ()
   ())
@@ -131,8 +131,9 @@
         finally (return collisions)))
 
 (defclass wall (visible solid)
-  ((foreground-color :initform :yellow)
-   (bold-color :initform nil)))
+  ((%foreground-color :initform :yellow)
+   (%background-color :initform :black)
+   (%bold-color :initform nil)))
 
 (defvar *display-function*
   (lambda (x y char fg-color bg-color bold)
@@ -164,19 +165,30 @@
   (push *player* *game-objects*)
   (push (make-instance 'sword :x 5 :y 5) *game-objects*))
 
-(defun tick (display-function key-code)
-  (case key-code
-    ((nil))
-    (:move-left (setf (dx *player*) -1))
-    (:move-up (setf (dy *player*) -1))
-    (:move-right (setf (dx *player*) 1))
-    (:move-down (setf (dy *player*) 1))
-    (:move-up-left (setf (dx *player*) -1 (dy *player*) -1))
-    (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
-    (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
-    (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
-    (:quit (error 'quit-condition))
-    (t (format t "Unknown key: ~a (~d)~%" (code-char key-code) key-code)))
+(defun tick (display-function action)
+  (when action
+    (print action))
+  (let ((run-speed 100))
+    (case action
+      ((nil))
+      (:move-left (setf (dx *player*) -1))
+      (:move-up (setf (dy *player*) -1))
+      (:move-right (setf (dx *player*) 1))
+      (:move-down (setf (dy *player*) 1))
+      (:move-up-left (setf (dx *player*) -1 (dy *player*) -1))
+      (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
+      (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
+      (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
+      (:run-left (setf (dx *player*) (- run-speed)))
+      (:run-up (setf (dy *player*) (- run-speed)))
+      (:run-right (setf (dx *player*) run-speed))
+      (:run-down (setf (dy *player*) run-speed))
+      (:run-up-left (setf (dx *player*) (- run-speed) (dy *player*) (- run-speed)))
+      (:run-up-right (setf (dx *player*) run-speed (dy *player*) (- run-speed)))
+      (:run-down-left (setf (dx *player*) (- run-speed) (dy *player*) run-speed))
+      (:run-down-right (setf (dx *player*) run-speed (dy *player*) run-speed))
+      (:quit (error 'quit-condition))
+      (t (format t "Unknown key: ~a (~d)~%" (code-char action) action))))
 
   (dolist (obj *game-objects*)
     (update obj))
@@ -192,7 +204,7 @@
       (display obj))))
 
 (defun init-floor ()
-  (let ((stage (dungen:make-stage :density 1
+  (let ((stage (dungen:make-stage :density 0.5
                                   :wild-factor 1
                                   :room-extent 9
                                   :door-rate 0.1
