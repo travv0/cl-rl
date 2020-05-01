@@ -39,7 +39,9 @@
    (friction :initarg :friction :initform 1 :accessor friction)))
 
 (defclass visible (pos)
-  ((char :initarg :char :accessor display-char)))
+  ((char :initarg :char :accessor display-char)
+   (foreground-color :initarg :fg-color :accessor foreground-color :initform :white)
+   (background-color :initarg :bg-color :accessor background-color :initform :black)))
 
 (defclass solid () ())
 
@@ -56,7 +58,7 @@
   ((char :initform #\))))
 
 (defclass sword (weapon)
-  ())
+  ((foreground-color :initform :magenta)))
 
 (defclass deleted ()
   ())
@@ -127,7 +129,8 @@
                 do (setf previous-step step))
         finally (return collisions)))
 
-(defclass wall (visible solid) ())
+(defclass wall (visible solid)
+  ((foreground-color :initform :cyan)))
 
 (defvar *display-function*
   (lambda (x y char color)
@@ -140,7 +143,8 @@
            (x obj)
            (y obj)
            (display-char obj)
-           nil))
+           (foreground-color obj)
+           (background-color obj)))
 
 (defparameter *player*
   (make-instance 'player :x 5 :y 1 :char #\@))
