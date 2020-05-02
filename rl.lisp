@@ -391,5 +391,3 @@
 
 (defun make-door (x y)
   (make-instance (mix 'door 'opaque 'solid) :x x :y y))
-
-(initialize)
