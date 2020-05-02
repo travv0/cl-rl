@@ -92,7 +92,14 @@
   ((%char :initform #\@)))
 
 (defclass enemy (solid moveable visible health)
-  ((%char :initform (error "enemies must have a char set"))))
+  ((%enemy-state :initarg :enemy-state
+                 :initform (if (zerop (random 2))
+                               :wandering
+                               :sleeping)
+                 :accessor enemy-state)
+   (%wandering-to :initform (pos (random *stage-width*) (random *stage-height*))
+                  :accessor wandering-to)
+   (%char :initform (error "enemies must have a char set"))))
 
 (defclass goblin (enemy)
   ((%char :initform #\g)
@@ -299,7 +306,9 @@
 
 (defun get-neighbors (pos)
   (mapcar (lambda (c) (cons (cons (x c) (y c)) 1))
-          (remove-if (lambda (pos) (member-if (op (typep _ 'wall)) (get-objects-at-pos pos)))
+          (remove-if (lambda (pos) (member-if (op (and (typep _1 'solid)
+                                                       (not (typep _1 'door))))
+                                              (get-objects-at-pos pos)))
                      (list
                       (pos (car pos) (1- (cdr pos)))
                       (pos (car pos) (1+ (cdr pos)))
@@ -316,14 +325,22 @@
 (defmethod move-toward-goal ((obj moveable) (goal-pos pos))
   (let ((path (find-path obj goal-pos)))
     (when path
-      (let* ((next-pos (second path))
-             (dx (- (car next-pos) (x obj)))
-             (dy (- (cdr next-pos) (y obj))))
+      (when-let* ((next-pos (second path))
+                  (dx (- (car next-pos) (x obj)))
+                  (dy (- (cdr next-pos) (y obj))))
         (setf (dx obj) dx
-              (dy obj) dy)))))
+              (dy obj) dy)
+        t))))
 
 (defmethod update :before ((enemy enemy))
-  (move-toward-goal enemy *player*))
+  (ccase (enemy-state enemy)
+    (:chasing (move-toward-goal enemy *player*))
+    (:wandering
+     (move-toward-goal enemy (wandering-to enemy))
+     (when (and (zerop (dx enemy)) (zerop (dy enemy)))
+       (setf (wandering-to enemy) (pos (random *stage-width*)
+                                       (random *stage-height*)))))
+    (:sleeping nil)))
 
 (defmethod update :before ((obj moveable))
   (with-accessors ((x x) (y y)

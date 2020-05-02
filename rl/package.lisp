@@ -4,6 +4,7 @@
   (:use #:cl #:box.ecs #:dynamic-mixins)
   (:import-from #:alexandria
                 #:when-let
+                #:when-let*
                 #:curry
                 #:removef
                 #:lastcar)
