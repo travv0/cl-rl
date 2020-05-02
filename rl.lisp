@@ -112,13 +112,13 @@
                 (= y (1- *stage-height*)))
         (block pos-loop
           (loop for pos in (get-line player (pos x y)) do
-            (when-let ((obj (get-object-at-pos pos)))
-              (unless (eq obj player)
-                (replace-memory obj)))
             (loop for obj in (get-objects-at-pos pos) do
               (ensure-mix obj 'can-see)
               (when (typep obj 'opaque)
-                (return-from pos-loop))))))))
+                (return-from pos-loop)))
+            (when-let ((obj (get-object-at-pos pos)))
+              (unless (eq obj player)
+                (replace-memory obj))))))))
   (call-next-method))
 
 (defmethod update :after ((player player))
