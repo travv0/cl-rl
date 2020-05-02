@@ -2,6 +2,19 @@
 
 (in-package #:rl)
 
+(defparameter *update-fns* (serapeum:dict))
+(defmacro multiupdate ((classes obj-name) &body body)
+  (flet ((make-typep (class)
+           `(typep ,obj-name ',class)))
+    `(setf (gethash ',(sort classes #'string<)
+                    *update-fns*)
+           (lambda (,obj-name)
+             (when (and ,@(mapcar #'make-typep classes))
+               ,@body)))))
+
+(defun remove-update-fn (classes)
+  (remhash (sort classes #'string<) *update-fns*))
+
 (defclass pos ()
   ((%x :initarg :x :initform 0 :reader x)
    (%y :initarg :y :initform 0 :reader y)))
@@ -99,10 +112,18 @@
 (defclass cell (visible)
   ((%char :initform #\.)))
 
+(defparameter *log* '())
+
+(defun write-to-log (format-control &rest format-args)
+  (push (apply #'format nil format-control format-args) *log*))
+
 (defgeneric update (object)
   (:documentation "What the object should do each tick."))
 
 (defmethod update (obj))
+
+(defmethod update :before (obj)
+  (maphash (op (funcall _2 obj)) *update-fns*))
 
 (defun get-objects-at-pos (pos)
   (gethash (list (x pos) (y pos)) *pos-cache*))
@@ -176,11 +197,13 @@
 
 (defmethod collide ((obj pos) (moving-obj moveable)))
 
-(defmethod collide ((door door) (moving-obj moveable))
+(defmethod collide :before ((door door) (moving-obj moveable))
+  (write-to-log "opened a door")
   (setf (display-char door) #\')
   (delete-from-mix door 'opaque 'solid))
 
-(defmethod collide ((obj item) (moving-obj inventory))
+(defmethod collide :before ((obj item) (moving-obj inventory))
+  (write-to-log "picked up a ~a" (class-of obj))
   (push obj (inventory moving-obj))
   (ensure-mix obj 'deleted))
 
@@ -216,8 +239,8 @@
     (loop with collisions = (sort (check-collisions obj) #'< :key (op (distance obj (cdr _))))
           for collision in collisions do
             (destructuring-bind (other-obj . last-pos) collision
-              (when (and (or (and (typep obj 'solid) (typep other-obj 'solid))
-                             (and other-obj (typep obj 'running) (typep other-obj 'item))))
+              (when (or (and (typep obj 'solid) (typep other-obj 'solid))
+                        (and other-obj (typep obj 'running) (typep other-obj 'item)))
                 (setf dx 0 dy 0)
                 (update-pos obj (x last-pos) (y last-pos)))
               (unless (typep obj 'running)
@@ -319,6 +342,7 @@
     (push obj (gethash (list (x obj) (y obj)) *pos-cache*))))
 
 (defun initialize ()
+  (setf *log* '())
   (setf *game-objects* '())
   (setf *pos-cache* (serapeum:dict))
   (init-cells *stage-width* *stage-height*)
@@ -384,7 +408,9 @@
                  (display obj))))
 
            (mapc (op (delete-from-mix _ 'can-see)) *game-objects*)
-        while (or (plusp (cooldown *player*)) (typep *player* 'running))))
+        while (or (plusp (cooldown *player*)) (typep *player* 'running)))
+
+  *log*)
 
 (defun should-display (obj)
   (or (typep obj 'can-see) (typep obj 'memory)))
