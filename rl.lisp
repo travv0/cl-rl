@@ -398,7 +398,7 @@
         (add-object cell)))))
 
 (defun init-floor (width height)
-  (let ((stage (dungen:make-stage :density 0.5
+  (let ((stage (dungen:make-stage :density 0.2
                                   :wild-factor 0.1
                                   :room-extent 9
                                   :door-rate 0.1
