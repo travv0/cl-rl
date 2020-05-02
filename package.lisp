@@ -5,7 +5,8 @@
   (:import-from #:alexandria
                 #:when-let
                 #:curry
-                #:removef)
+                #:removef
+                #:lastcar)
   (:import-from #:serapeum
                 #:op
                 #:do-hash-table)

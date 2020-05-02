@@ -97,6 +97,15 @@
 (defclass weapon (item)
   ((%char :initform #\))))
 
+(defclass modifier ()
+  ())
+
+(defclass fire (modifier)
+  ())
+
+(defclass ice (modifier)
+  ())
+
 (defclass sword (weapon)
   ((%foreground-color :initform :magenta)))
 
@@ -195,15 +204,31 @@
     (setf (slot-value obj '%x) new-x
           (slot-value obj '%y) new-y)))
 
+(defmethod display-name (obj)
+  (let ((obj-name (string-downcase
+                   (class-name
+                    (typecase (class-of obj)
+                      (mixin-class (lastcar (c2mop:class-direct-superclasses (class-of obj))))
+                      (t (first (c2mop:class-precedence-list (class-of obj))))))))
+        (obj-modifiers (mapcar (op (string-downcase (class-name _)))
+                               (remove-if (op (or (typep _1 'mixin-class)
+                                                  (eq _1 (find-class 'modifier))
+                                                  (not (c2mop:subtypep _1 (find-class 'modifier)))))
+                                          (c2mop:class-precedence-list (class-of obj))))))
+    (format nil "~{~a ~}~a" obj-modifiers obj-name)))
+
 (defmethod collide ((obj pos) (moving-obj moveable)))
 
 (defmethod collide :before ((door door) (moving-obj moveable))
-  (write-to-log "opened a door")
-  (setf (display-char door) #\')
-  (delete-from-mix door 'opaque 'solid))
+  (when (typep door 'solid)
+    (write-to-log "opened a door")
+    (setf (display-char door) #\')
+    (delete-from-mix door 'opaque 'solid)))
 
 (defmethod collide :before ((obj item) (moving-obj inventory))
-  (write-to-log "picked up a ~a" (class-of obj))
+  (write-to-log "picked up ~:[something~;a~@[n~] ~0@*~a~]"
+                (display-name obj)
+                (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u)))
   (push obj (inventory moving-obj))
   (ensure-mix obj 'deleted))
 
@@ -349,7 +374,7 @@
   (init-floor *stage-width* *stage-height*)
   (setf *player* (make-instance 'player :x 40 :y 10))
   (add-object *player*)
-  (add-object (make-instance 'sword :x 5 :y 5)))
+  (add-object (make-instance (mix 'fire 'ice 'sword) :x 40 :y 11)))
 
 (defun tick (display-function action)
   (case action
