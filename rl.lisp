@@ -35,10 +35,14 @@
   (and (= (x p1) (x p2))
        (= (y p1) (y p2))))
 
-(defclass moveable (pos)
+(defclass cooldown ()
+  ((%cooldown :initform 0 :accessor cooldown)))
+
+(defclass moveable (pos cooldown)
   ((%dx :initarg :dx :initform 0 :accessor dx)
    (%dy :initarg :dy :initform 0 :accessor dy)
-   (%friction :initarg :friction :initform 1 :accessor friction)))
+   (%friction :initarg :friction :initform 1 :accessor friction)
+   (%move-cooldown :initarg :move-cooldown :initform 5 :accessor move-cooldown)))
 
 (defclass visible (pos)
   ((%char :initarg :char :accessor display-char)
@@ -59,7 +63,7 @@
 (defclass inventory ()
   ((%inventory :initarg :inventory :initform '() :accessor inventory)))
 
-(defclass player (moveable visible solid inventory)
+(defclass player (moveable visible solid inventory can-see)
   ((%char :initform #\@)))
 
 (defclass item (visible)
@@ -111,24 +115,27 @@
                 (zerop y)
                 (= y (1- *stage-height*)))
         (block pos-loop
-          (loop for pos in (get-line player (pos x y)) do
-            (loop for obj in (get-objects-at-pos pos) do
-              (ensure-mix obj 'can-see)
-              (when (typep obj 'opaque)
-                (return-from pos-loop)))
-            (when-let ((obj (get-object-at-pos pos)))
-              (unless (eq obj player)
-                (replace-memory obj))))))))
+          (loop with hit-opaque = nil
+                for pos in (rest (get-line player (pos x y)))
+                do (loop for obj in (get-objects-at-pos pos)
+                         do (ensure-mix obj 'can-see)
+                            (when (typep obj 'opaque)
+                              (setf hit-opaque t)))
+                   (when-let ((obj (get-object-at-pos pos)))
+                     (unless (eq obj player)
+                       (replace-memory obj)))
+                   (when hit-opaque
+                     (return-from pos-loop)))))))
   (call-next-method))
 
 (defmethod update :after ((player player))
   (with-accessors ((x x) (y y)) player
     (flet ((visible-pos (check-x check-y)
-             (and (not (typep (get-object-at-pos (pos check-x check-y)) 'wall))
+             (and (not (typep (get-object-at-pos (pos check-x check-y)) 'opaque))
                   (some (op (and (typep _1 'can-see) (not (typep _1 'memory))))
                         (get-objects-at-pos (pos check-x check-y))))))
       (loop for obj in *game-objects*
-            when (and (typep obj 'wall) (not (typep obj 'can-see)))
+            when (and (typep obj 'opaque) (not (typep obj 'can-see)))
               do (when (or (and (>= x (x obj))
                                 (>= y (y obj))
                                 (or (visible-pos (1+ (x obj)) (y obj))
@@ -155,29 +162,42 @@
     (setf (slot-value obj '%x) new-x
           (slot-value obj '%y) new-y)))
 
+(defmethod collide ((obj pos) (moving-obj moveable)))
+
+(defmethod collide ((door door) (moving-obj moveable))
+  (setf (display-char door) #\')
+  (delete-from-mix door 'opaque 'solid))
+
+(defmethod update :after ((obj cooldown))
+  (when (plusp (cooldown obj))
+    (decf (cooldown obj))))
+
 (defmethod update :before ((obj moveable))
   (with-accessors ((x x) (y y)
                    (dx dx) (dy dy)
-                   (friction friction))
+                   (friction friction)
+                   (move-cooldown move-cooldown)
+                   (cooldown cooldown))
       obj
     (loop with collisions = (sort (check-collisions obj) #'< :key (op (distance obj (cdr _))))
           for collision in collisions do
             (destructuring-bind (other-obj . last-pos) collision
               (when (and (typep obj 'solid) other-obj last-pos (typep other-obj 'solid))
                 (setf dx 0 dy 0)
-                (update-pos obj (x last-pos) (y last-pos))
-                (return))
+                (update-pos obj (x last-pos) (y last-pos)))
               (when (and other-obj (typep other-obj 'item) (typep obj 'inventory))
                 (push other-obj (inventory obj))
-                (ensure-mix other-obj 'deleted)
-                (when (typep obj 'running)
-                  (update-pos obj (x other-obj) (y other-obj))
-                  (setf dx 0 dy 0)
-                  (delete-from-mix obj 'running)
-                  (return)))))
+                (ensure-mix other-obj 'deleted))
+              (collide other-obj obj)
+              (when (and (zerop dx) (zerop dy))
+                (delete-from-mix obj 'running)
+                (return))))
+    (unless (and (zerop dx) (zerop dy))
+      (setf cooldown move-cooldown))
     (update-pos obj (+ x (round dx)) (+ y (round dy)))
-    (setf dx (- dx (* dx friction))
-          dy (- dy (* dy friction)))))
+    (unless (typep obj 'running)
+      (setf dx (- dx (* dx friction))
+            dy (- dy (* dy friction))))))
 
 (defmethod get-line ((start pos) (end pos))
   (let* ((x1 (x start))
@@ -231,7 +251,14 @@
         finally (return collisions)))
 
 (defclass wall (visible solid opaque)
-  ((%foreground-color :initform :yellow)
+  ((%char :initform #\#)
+   (%foreground-color :initform :yellow)
+   (%background-color :initform :black)
+   (%bold-color :initform nil)))
+
+(defclass door (visible)
+  ((%char :initform #\+)
+   (%foreground-color :initform :red)
    (%background-color :initform :black)
    (%bold-color :initform nil)))
 
@@ -271,46 +298,47 @@
   (add-object (make-instance 'sword :x 5 :y 5)))
 
 (defun tick (display-function action)
-  (let ((run-speed 100))
-    (case action
-      ((nil))
-      (:move-left (setf (dx *player*) -1))
-      (:move-up (setf (dy *player*) -1))
-      (:move-right (setf (dx *player*) 1))
-      (:move-down (setf (dy *player*) 1))
-      (:move-up-left (setf (dx *player*) -1 (dy *player*) -1))
-      (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
-      (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
-      (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
-      (:run-left
-       (ensure-mix *player* 'running)
-       (setf (dx *player*) (- run-speed)))
-      (:run-up
-       (ensure-mix *player* 'running)
-       (setf (dy *player*) (- run-speed)))
-      (:run-right
-       (ensure-mix *player* 'running)
-       (setf (dx *player*) run-speed))
-      (:run-down
-       (ensure-mix *player* 'running)
-       (setf (dy *player*) run-speed))
-      (:run-up-left
-       (ensure-mix *player* 'running)
-       (setf (dx *player*) (- run-speed) (dy *player*) (- run-speed)))
-      (:run-up-right
-       (ensure-mix *player* 'running)
-       (setf (dx *player*) run-speed (dy *player*) (- run-speed)))
-      (:run-down-left
-       (ensure-mix *player* 'running)
-       (setf (dx *player*) (- run-speed) (dy *player*) run-speed))
-      (:run-down-right
-       (ensure-mix *player* 'running)
-       (setf (dx *player*) run-speed (dy *player*) run-speed))
-      (:quit (error 'quit-condition))
-      (t (format t "Unknown key: ~a (~d)~%" (code-char action) action))))
+  (case action
+    ((nil))
+    (:move-left (setf (dx *player*) -1))
+    (:move-up (setf (dy *player*) -1))
+    (:move-right (setf (dx *player*) 1))
+    (:move-down (setf (dy *player*) 1))
+    (:move-up-left (setf (dx *player*) -1 (dy *player*) -1))
+    (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
+    (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
+    (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
+    (:run-left
+     (ensure-mix *player* 'running)
+     (setf (dx *player*) -1))
+    (:run-up
+     (ensure-mix *player* 'running)
+     (setf (dy *player*) -1))
+    (:run-right
+     (ensure-mix *player* 'running)
+     (setf (dx *player*) 1))
+    (:run-down
+     (ensure-mix *player* 'running)
+     (setf (dy *player*) 1))
+    (:run-up-left
+     (ensure-mix *player* 'running)
+     (setf (dx *player*) -1 (dy *player*) -1))
+    (:run-up-right
+     (ensure-mix *player* 'running)
+     (setf (dx *player*) 1 (dy *player*) -1))
+    (:run-down-left
+     (ensure-mix *player* 'running)
+     (setf (dx *player*) -1 (dy *player*) 1))
+    (:run-down-right
+     (ensure-mix *player* 'running)
+     (setf (dx *player*) 1 (dy *player*) 1))
+    (:reset (initialize))
+    (:quit (error 'quit-condition))
+    (t (format t "Unknown key: ~a (~d)~%" (code-char action) action)))
 
-  (dolist (obj *game-objects*)
-    (update obj))
+  (loop do (dolist (obj *game-objects*)
+             (update obj))
+        while (or (plusp (cooldown *player*)) (typep *player* 'running)))
 
   (setf *game-objects*
         (loop for obj in *game-objects*
@@ -341,7 +369,7 @@
 
 (defun init-floor (width height)
   (let ((stage (dungen:make-stage :density 0.5
-                                  :wild-factor 1
+                                  :wild-factor 0.1
                                   :room-extent 9
                                   :door-rate 0.1
                                   :width width
@@ -350,9 +378,15 @@
       (loop for x below (dungen:stage-width stage)
             for cell = (dungen:get-cell stage x y)
             do (cond ((dungen:has-feature-p cell :wall)
-                      (add-object (make-wall x y))))))))
+                      (add-object (make-wall x y)))
+                     ((or (dungen:has-feature-p cell :door/vertical)
+                          (dungen:has-feature-p cell :door/horizontal))
+                      (add-object (make-door x y))))))))
 
 (defun make-wall (x y)
-  (make-instance 'wall :x x :y y :char #\#))
+  (make-instance 'wall :x x :y y))
+
+(defun make-door (x y)
+  (make-instance (mix 'door 'opaque 'solid) :x x :y y))
 
 (initialize)
