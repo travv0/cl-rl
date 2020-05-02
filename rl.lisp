@@ -66,6 +66,18 @@
 (defclass player (moveable visible solid inventory can-see)
   ((%char :initform #\@)))
 
+(defclass wall (visible solid opaque)
+  ((%char :initform #\#)
+   (%foreground-color :initform :yellow)
+   (%background-color :initform :black)
+   (%bold-color :initform nil)))
+
+(defclass door (visible)
+  ((%char :initform #\+)
+   (%foreground-color :initform :red)
+   (%background-color :initform :black)
+   (%bold-color :initform nil)))
+
 (defclass item (visible)
   ((%char :initform #\?)))
 
@@ -78,7 +90,7 @@
 (defclass deleted ()
   ())
 
-(defclass running ()
+(defclass running (pos)
   ())
 
 (defclass opaque ()
@@ -168,9 +180,31 @@
   (setf (display-char door) #\')
   (delete-from-mix door 'opaque 'solid))
 
+(defmethod collide ((obj item) (moving-obj inventory))
+  (push obj (inventory moving-obj))
+  (ensure-mix obj 'deleted))
+
 (defmethod update :after ((obj cooldown))
   (when (plusp (cooldown obj))
     (decf (cooldown obj))))
+
+(defun wall-p (x y dir)
+  (ccase dir
+    (:up (some (op (typep _ 'wall)) (get-objects-at-pos (pos x (1- y)))))
+    (:down (some (op (typep _ 'wall)) (get-objects-at-pos (pos x (1+ y)))))
+    (:left (some (op (typep _ 'wall)) (get-objects-at-pos (pos (1- x) y))))
+    (:right (some (op (typep _ 'wall)) (get-objects-at-pos (pos (1+ x) y))))))
+
+(defmethod wall-different-p ((obj pos) prev-x prev-y)
+  (with-accessors ((x x) (y y)) obj
+    (or (and (/= x prev-x) (or (not (eql (wall-p x y :up)
+                                         (wall-p prev-x prev-y :up)))
+                               (not (eql (wall-p x y :down)
+                                         (wall-p prev-x prev-y :down)))))
+        (and (/= y prev-y) (or (not (eql (wall-p x y :left)
+                                         (wall-p prev-x prev-y :left)))
+                               (not (eql (wall-p x y :right)
+                                         (wall-p prev-x prev-y :right))))))))
 
 (defmethod update :before ((obj moveable))
   (with-accessors ((x x) (y y)
@@ -182,13 +216,12 @@
     (loop with collisions = (sort (check-collisions obj) #'< :key (op (distance obj (cdr _))))
           for collision in collisions do
             (destructuring-bind (other-obj . last-pos) collision
-              (when (and (typep obj 'solid) other-obj last-pos (typep other-obj 'solid))
+              (when (and (or (and (typep obj 'solid) (typep other-obj 'solid))
+                             (and other-obj (typep obj 'running) (typep other-obj 'item))))
                 (setf dx 0 dy 0)
                 (update-pos obj (x last-pos) (y last-pos)))
-              (when (and other-obj (typep other-obj 'item) (typep obj 'inventory))
-                (push other-obj (inventory obj))
-                (ensure-mix other-obj 'deleted))
-              (collide other-obj obj)
+              (unless (typep obj 'running)
+                (collide other-obj obj))
               (when (and (zerop dx) (zerop dy))
                 (delete-from-mix obj 'running)
                 (return))))
@@ -198,6 +231,10 @@
                                move-cooldown)))
         (setf cooldown move-cooldown)))
     (update-pos obj (+ x (round dx)) (+ y (round dy)))
+    (when (and (typep obj 'running)
+               (wall-different-p obj (- x (round dx)) (- y (round dy))))
+      (setf dx 0 dy 0)
+      (delete-from-mix obj 'running))
     (unless (typep obj 'running)
       (setf dx (- dx (* dx friction))
             dy (- dy (* dy friction))))))
@@ -243,27 +280,17 @@
 (defmethod check-collisions ((obj moveable))
   (loop with collisions = '()
         for other-obj in *game-objects*
-        when (not (eq obj other-obj)) do
-          (loop with previous-step = obj
-                for step in (get-line obj (pos (+ (x obj) (dx obj))
-                                               (+ (y obj) (dy obj))))
-                when (and (= (x step) (x other-obj))
-                          (= (y step) (y other-obj)))
-                  do (push (cons other-obj previous-step) collisions)
-                do (setf previous-step step))
+        unless (eq obj other-obj)
+          do (loop with previous-step = obj
+                   for step in (get-line obj (pos (+ (x obj) (dx obj))
+                                                  (+ (y obj) (dy obj))))
+                   when (and (not (typep other-obj 'cell))
+                             (not (typep other-obj 'memory))
+                             (= (x step) (x other-obj))
+                             (= (y step) (y other-obj)))
+                     do (push (cons other-obj previous-step) collisions)
+                   do (setf previous-step step))
         finally (return collisions)))
-
-(defclass wall (visible solid opaque)
-  ((%char :initform #\#)
-   (%foreground-color :initform :yellow)
-   (%background-color :initform :black)
-   (%bold-color :initform nil)))
-
-(defclass door (visible)
-  ((%char :initform #\+)
-   (%foreground-color :initform :red)
-   (%background-color :initform :black)
-   (%bold-color :initform nil)))
 
 (defvar *display-function*
   (lambda (x y char fg-color bg-color bold)
@@ -341,22 +368,22 @@
 
   (loop do (dolist (obj *game-objects*)
              (update obj))
-        while (or (plusp (cooldown *player*)) (typep *player* 'running)))
 
-  (setf *game-objects*
-        (loop for obj in *game-objects*
-              if (typep obj 'deleted)
-                do (delete-from-mix obj 'deleted)
-                   (removef (gethash (list (x obj) (y obj)) *pos-cache*) obj)
-              else collect obj))
+           (setf *game-objects*
+                 (loop for obj in *game-objects*
+                       if (typep obj 'deleted)
+                         do (delete-from-mix obj 'deleted)
+                            (removef (gethash (list (x obj) (y obj)) *pos-cache*) obj)
+                       else collect obj))
 
-  (let ((*display-function* display-function))
-    (do-hash-table (key objs *pos-cache*)
-      (declare (ignore key))
-      (when-let ((obj (find-if #'should-display objs)))
-        (display obj))))
+           (let ((*display-function* display-function))
+             (do-hash-table (key objs *pos-cache*)
+               (declare (ignore key))
+               (when-let ((obj (find-if #'should-display objs)))
+                 (display obj))))
 
-  (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
+           (mapc (op (delete-from-mix _ 'can-see)) *game-objects*)
+        while (or (plusp (cooldown *player*)) (typep *player* 'running))))
 
 (defun should-display (obj)
   (or (typep obj 'can-see) (typep obj 'memory)))
