@@ -362,6 +362,7 @@
     (:run-down-right
      (ensure-mix *player* 'running)
      (setf (dx *player*) 1 (dy *player*) 1))
+    (:reveal-map (mapc #'replace-memory (reverse *game-objects*)))
     (:reset (initialize))
     (:quit (error 'quit-condition))
     (t (format t "Unknown key: ~a (~d)~%" (code-char action) action)))
@@ -388,7 +389,7 @@
 (defun should-display (obj)
   (or (typep obj 'can-see) (typep obj 'memory)))
 
-(defparameter *stage-width* 79)
+(defparameter *stage-width* 49)
 (defparameter *stage-height* 23)
 
 (defun init-cells (width height)
@@ -398,12 +399,13 @@
         (add-object cell)))))
 
 (defun init-floor (width height)
-  (let ((stage (dungen:make-stage :density 0.2
-                                  :wild-factor 0.1
-                                  :room-extent 9
-                                  :door-rate 0.1
-                                  :width width
-                                  :height height)))
+  (let* ((extent (- (ceiling (min (/ width 2) (/ height 2))) 2))
+         (stage (dungen:make-stage :density 0.5
+                                   :wild-factor 0.1
+                                   :room-extent (if (evenp extent) (1- extent) extent)
+                                   :door-rate 0.1
+                                   :width width
+                                   :height height)))
     (loop for y from (1- (dungen:stage-height stage)) downto 0 do
       (loop for x below (dungen:stage-width stage)
             for cell = (dungen:get-cell stage x y)
