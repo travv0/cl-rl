@@ -102,7 +102,9 @@
         (block pos-loop
           (loop for pos in (get-line player (pos x y)) do
             (loop for obj in (get-objects-at-pos pos) do
-              (ensure-mix obj 'can-see 'remembered)
+              (ensure-mix obj 'can-see)
+              (unless (typep obj 'moveable)
+                (ensure-mix obj 'remembered))
               (when (typep obj 'opaque)
                 (return-from pos-loop)))))))))
 
@@ -208,11 +210,11 @@
            (background-color obj)
            (bold-color obj)))
 
-(defmethod display :after ((obj can-see))
+(defmethod draw :after ((obj can-see))
   (delete-from-mix obj 'can-see))
 
 (defparameter *player*
-  (make-instance 'player :x 5 :y 1 :char #\@))
+  (make-instance 'player :x 5 :y 1))
 
 (defparameter *game-objects* '())
 
@@ -226,10 +228,10 @@
 (defun initialize ()
   (setf *game-objects* '())
   (setf *pos-cache* (serapeum:dict))
-  (init-cells)
-  (init-floor)
+  (init-cells *stage-width* *stage-height*)
+  (init-floor *stage-width* *stage-height*)
   (setf *player*
-        (make-instance 'player :x 5 :y 1 :char #\@))
+        (make-instance 'player :x 5 :y 1))
   (add-object *player*)
   (add-object (make-instance 'sword :x 5 :y 5)))
 
@@ -283,40 +285,41 @@
               else collect obj))
 
   (let ((*display-function* display-function))
-    (do-hash-table (key list *pos-cache*)
-      (declare (ignore key))
-      (let ((obj (first list)))
-        (when (and obj (typep obj 'remembered))
-          (unless (slot-boundp obj '%old-foreground-color)
-            (print 'here)
-            (setf (old-foreground-color obj) (foreground-color obj)
-                  (old-background-color obj) (background-color obj)
-                  (old-bold-color obj) (bold-color obj)))
-          (if (not (typep obj 'can-see))
-              (setf (foreground-color obj) :blue
-                    (background-color obj) :black
-                    (bold-color obj) nil)
-              (setf (foreground-color obj) (old-foreground-color obj)
-                    (background-color obj) (old-background-color obj)
-                    (bold-color obj) (old-bold-color obj)))
-          (display obj))))))
+    (loop for obj in (reverse *game-objects*) do
+      (when (typep obj 'remembered)
+        (unless (slot-boundp obj '%old-foreground-color)
+          (setf (old-foreground-color obj) (foreground-color obj)
+                (old-background-color obj) (background-color obj)
+                (old-bold-color obj) (bold-color obj)))
+        (if (not (typep obj 'can-see))
+            (setf (foreground-color obj) :blue
+                  (background-color obj) :black
+                  (bold-color obj) nil)
+            (setf (foreground-color obj) (old-foreground-color obj)
+                  (background-color obj) (old-background-color obj)
+                  (bold-color obj) (old-bold-color obj))))
+      (when (should-display obj)
+        (display obj)))))
+
+(defun should-display (obj)
+  (or (typep obj 'can-see) (typep obj 'remembered)))
 
 (defparameter *stage-width* 79)
 (defparameter *stage-height* 23)
 
-(defun init-cells ()
-  (loop for y below *stage-height* do
-    (loop for x below *stage-width* do
+(defun init-cells (width height)
+  (loop for y below width do
+    (loop for x below height do
       (let ((cell (make-instance 'cell :x x :y y)))
         (add-object cell)))))
 
-(defun init-floor ()
+(defun init-floor (width height)
   (let ((stage (dungen:make-stage :density 0.5
                                   :wild-factor 1
                                   :room-extent 9
                                   :door-rate 0.1
-                                  :width *stage-width*
-                                  :height *stage-height*)))
+                                  :width width
+                                  :height height)))
     (loop for y from (1- (dungen:stage-height stage)) downto 0 do
       (loop for x below (dungen:stage-width stage)
             for cell = (dungen:get-cell stage x y)
@@ -325,3 +328,5 @@
 
 (defun make-wall (x y)
   (make-instance 'wall :x x :y y :char #\#))
+
+(initialize)
