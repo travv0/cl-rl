@@ -76,8 +76,26 @@
 (defclass inventory ()
   ((%inventory :initarg :inventory :initform '() :accessor inventory)))
 
-(defclass player (moveable visible solid inventory can-see)
+(defclass health ()
+  ((%health :initarg :health :initform 100 :accessor health)))
+
+(defclass equip-weapon ()
+  ())
+
+(defclass right-arm (equip-weapon)
+  ((%equip-right-arm :initarg :equip-right-arm :initform nil :accessor equip-right-arm)))
+
+(defclass left-arm (equip-weapon)
+  ((%equip-left-arm :initarg :equip-left-arm :initform nil :accessor equip-left-arm)))
+
+(defclass player (moveable visible solid inventory can-see health right-arm left-arm)
   ((%char :initform #\@)))
+
+(defclass enemy (solid moveable visible health)
+  ((%char :initform (error "enemies must have a char set"))))
+
+(defclass goblin (enemy)
+  ((%char :initform #\g)))
 
 (defclass wall (visible solid opaque)
   ((%char :initform #\#)
@@ -94,6 +112,9 @@
 (defclass item (visible)
   ((%char :initform #\?)))
 
+(defclass damage ()
+  ((%damage :initarg :damage :initform 30 :accessor damage)))
+
 (defclass weapon (item)
   ((%char :initform #\))))
 
@@ -106,7 +127,7 @@
 (defclass ice (modifier)
   ())
 
-(defclass sword (weapon)
+(defclass sword (weapon damage)
   ((%foreground-color :initform :magenta)))
 
 (defclass deleted ()
@@ -221,7 +242,6 @@
 
 (defmethod collide :before ((door door) (moving-obj moveable))
   (when (typep door 'solid)
-    (write-to-log "opened a door")
     (setf (display-char door) #\')
     (delete-from-mix door 'opaque 'solid)))
 
@@ -229,8 +249,25 @@
   (write-to-log "picked up ~:[something~;a~@[n~] ~0@*~a~]"
                 (display-name obj)
                 (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u)))
-  (push obj (inventory moving-obj))
+  (if (typep obj 'weapon)
+      (setf (equip-right-arm moving-obj) obj)
+      (push obj (inventory moving-obj)))
   (ensure-mix obj 'deleted))
+
+(defparameter *melee-damage* 5)
+
+(defmethod collide :before ((obj health) (arm right-arm))
+  (let ((damage (if (equip-right-arm arm)
+                    (damage (equip-right-arm arm))
+                    *melee-damage*)))
+    (write-to-log "~a attacked ~a for ~d damage"
+                  (display-name arm)
+                  (display-name obj)
+                  damage)
+    (decf (health obj) damage)
+    (when (not (plusp (health obj)))
+      (write-to-log "~a was defeated" (display-name obj))
+      (ensure-mix obj 'deleted))))
 
 (defmethod update :after ((obj cooldown))
   (when (plusp (cooldown obj))
@@ -374,7 +411,8 @@
   (init-floor *stage-width* *stage-height*)
   (setf *player* (make-instance 'player :x 40 :y 10))
   (add-object *player*)
-  (add-object (make-instance (mix 'fire 'ice 'sword) :x 40 :y 11)))
+  (add-object (make-instance (mix 'fire 'ice 'sword) :x 40 :y 11))
+  (add-object (make-instance 'goblin :x 40 :y 12)))
 
 (defun tick (display-function action)
   (case action
