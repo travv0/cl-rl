@@ -49,6 +49,11 @@
 (defclass can-see ()
   ())
 
+(defclass remembered ()
+  ((%old-foreground-color :accessor old-foreground-color)
+   (%old-background-color :accessor old-background-color)
+   (%old-bold-color :accessor old-bold-color)))
+
 (defclass solid () ())
 
 (defclass inventory ()
@@ -97,7 +102,7 @@
         (block pos-loop
           (loop for pos in (get-line player (pos x y)) do
             (loop for obj in (get-objects-at-pos pos) do
-              (ensure-mix obj 'can-see)
+              (ensure-mix obj 'can-see 'remembered)
               (when (typep obj 'opaque)
                 (return-from pos-loop)))))))))
 
@@ -281,10 +286,20 @@
     (do-hash-table (key list *pos-cache*)
       (declare (ignore key))
       (let ((obj (first list)))
-        (when (and obj (typep obj 'can-see))
+        (when (and obj (typep obj 'remembered))
+          (unless (slot-boundp obj '%old-foreground-color)
+            (print 'here)
+            (setf (old-foreground-color obj) (foreground-color obj)
+                  (old-background-color obj) (background-color obj)
+                  (old-bold-color obj) (bold-color obj)))
+          (if (not (typep obj 'can-see))
+              (setf (foreground-color obj) :blue
+                    (background-color obj) :black
+                    (bold-color obj) nil)
+              (setf (foreground-color obj) (old-foreground-color obj)
+                    (background-color obj) (old-background-color obj)
+                    (bold-color obj) (old-bold-color obj)))
           (display obj))))))
-
-(gethash (list 1 1) *pos-cache*)
 
 (defparameter *stage-width* 79)
 (defparameter *stage-height* 23)
