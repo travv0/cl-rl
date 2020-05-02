@@ -95,7 +95,9 @@
   ((%char :initform (error "enemies must have a char set"))))
 
 (defclass goblin (enemy)
-  ((%char :initform #\g)))
+  ((%char :initform #\g)
+   (%foreground-color :initform :green)
+   (%bold-color :initform nil)))
 
 (defclass wall (visible solid opaque)
   ((%char :initform #\#)
