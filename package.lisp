@@ -4,9 +4,11 @@
   (:use #:cl #:box.ecs #:dynamic-mixins)
   (:import-from #:alexandria
                 #:when-let
-                #:curry)
+                #:curry
+                #:removef)
   (:import-from #:serapeum
-                #:op)
+                #:op
+                #:do-hash-table)
   (:export #:*display-function*
            #:tick
            #:initialize
