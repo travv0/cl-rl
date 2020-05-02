@@ -14,6 +14,7 @@
                  #:dynamic-mixins)
     :components ((:module "rl"
                   :components ((:file "package")
+                               (:file "astar")
                                (:file "rl")))
                  (:module "rl-curses"
                   :components ((:file "package")
