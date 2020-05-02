@@ -91,6 +91,9 @@
 (defun get-objects-at-pos (pos)
   (gethash (list (x pos) (y pos)) *pos-cache*))
 
+(defun get-object-at-pos (pos)
+  (find-if #'should-display (gethash (list (x pos) (y pos)) *pos-cache*)))
+
 (defun replace-memory (obj)
   (let ((cache (gethash (list (x obj) (y obj)) *pos-cache*)))
     (setf (gethash (list (x obj) (y obj)) *pos-cache*)
@@ -99,7 +102,7 @@
           (append (gethash (list (x obj) (y obj)) *pos-cache*)
                   (list (make-instance 'memory :char (display-char obj) :x (x obj) :y (y obj)))))))
 
-(defmethod update :after ((player player))
+(defmethod update ((player player))
   (do-hash-table (key objs *pos-cache*)
     (declare (ignore objs))
     (destructuring-bind (x y) key
@@ -109,12 +112,41 @@
                 (= y (1- *stage-height*)))
         (block pos-loop
           (loop for pos in (get-line player (pos x y)) do
+            (when-let ((obj (get-object-at-pos pos)))
+              (unless (eq obj player)
+                (replace-memory obj)))
             (loop for obj in (get-objects-at-pos pos) do
               (ensure-mix obj 'can-see)
-              (unless (eq obj player)
-                (replace-memory obj))
               (when (typep obj 'opaque)
-                (return-from pos-loop)))))))))
+                (return-from pos-loop))))))))
+  (call-next-method))
+
+(defmethod update :after ((player player))
+  (with-accessors ((x x) (y y)) player
+    (flet ((visible-pos (check-x check-y)
+             (and (not (typep (get-object-at-pos (pos check-x check-y)) 'wall))
+                  (some (op (and (typep _1 'can-see) (not (typep _1 'memory))))
+                        (get-objects-at-pos (pos check-x check-y))))))
+      (loop for obj in *game-objects*
+            when (and (typep obj 'wall) (not (typep obj 'can-see)))
+              do (when (or (and (>= x (x obj))
+                                (>= y (y obj))
+                                (or (visible-pos (1+ (x obj)) (y obj))
+                                    (visible-pos (x obj) (1+ (y obj)))))
+                           (and (<= x (x obj))
+                                (>= y (y obj))
+                                (or (visible-pos (1- (x obj)) (y obj))
+                                    (visible-pos (x obj) (1+ (y obj)))))
+                           (and (<= x (x obj))
+                                (<= y (y obj))
+                                (or (visible-pos (1- (x obj)) (y obj))
+                                    (visible-pos (x obj) (1- (y obj)))))
+                           (and (>= x (x obj))
+                                (<= y (y obj))
+                                (or (visible-pos (1+ (x obj)) (y obj))
+                                    (visible-pos (x obj) (1- (y obj))))))
+                   (replace-memory obj)
+                   (ensure-mix obj 'can-see))))))
 
 (defmethod update-pos ((obj pos) new-x new-y)
   (with-accessors ((x x) (y y)) obj
