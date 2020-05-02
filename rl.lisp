@@ -49,10 +49,10 @@
 (defclass can-see ()
   ())
 
-(defclass remembered ()
-  ((%old-foreground-color :accessor old-foreground-color)
-   (%old-background-color :accessor old-background-color)
-   (%old-bold-color :accessor old-bold-color)))
+(defclass memory (visible)
+  ((%foreground-color :initform :blue)
+   (%background-color :initform :black)
+   (%bold-color :initform nil)))
 
 (defclass solid () ())
 
@@ -91,6 +91,14 @@
 (defun get-objects-at-pos (pos)
   (gethash (list (x pos) (y pos)) *pos-cache*))
 
+(defun replace-memory (obj)
+  (let ((cache (gethash (list (x obj) (y obj)) *pos-cache*)))
+    (setf (gethash (list (x obj) (y obj)) *pos-cache*)
+          (remove-if (op (typep _ 'memory)) cache)
+          (gethash (list (x obj) (y obj)) *pos-cache*)
+          (append (gethash (list (x obj) (y obj)) *pos-cache*)
+                  (list (make-instance 'memory :char (display-char obj) :x (x obj) :y (y obj)))))))
+
 (defmethod update :after ((player player))
   (do-hash-table (key objs *pos-cache*)
     (declare (ignore objs))
@@ -103,8 +111,8 @@
           (loop for pos in (get-line player (pos x y)) do
             (loop for obj in (get-objects-at-pos pos) do
               (ensure-mix obj 'can-see)
-              (unless (typep obj 'moveable)
-                (ensure-mix obj 'remembered))
+              (unless (eq obj player)
+                (replace-memory obj))
               (when (typep obj 'opaque)
                 (return-from pos-loop)))))))))
 
@@ -210,11 +218,7 @@
            (background-color obj)
            (bold-color obj)))
 
-(defmethod draw :after ((obj can-see))
-  (delete-from-mix obj 'can-see))
-
-(defparameter *player*
-  (make-instance 'player :x 5 :y 1))
+(defvar *player*)
 
 (defparameter *game-objects* '())
 
@@ -230,8 +234,7 @@
   (setf *pos-cache* (serapeum:dict))
   (init-cells *stage-width* *stage-height*)
   (init-floor *stage-width* *stage-height*)
-  (setf *player*
-        (make-instance 'player :x 5 :y 1))
+  (setf *player* (make-instance 'player :x 40 :y 10))
   (add-object *player*)
   (add-object (make-instance 'sword :x 5 :y 5)))
 
@@ -285,31 +288,22 @@
               else collect obj))
 
   (let ((*display-function* display-function))
-    (loop for obj in (reverse *game-objects*) do
-      (when (typep obj 'remembered)
-        (unless (slot-boundp obj '%old-foreground-color)
-          (setf (old-foreground-color obj) (foreground-color obj)
-                (old-background-color obj) (background-color obj)
-                (old-bold-color obj) (bold-color obj)))
-        (if (not (typep obj 'can-see))
-            (setf (foreground-color obj) :blue
-                  (background-color obj) :black
-                  (bold-color obj) nil)
-            (setf (foreground-color obj) (old-foreground-color obj)
-                  (background-color obj) (old-background-color obj)
-                  (bold-color obj) (old-bold-color obj))))
-      (when (should-display obj)
-        (display obj)))))
+    (do-hash-table (key objs *pos-cache*)
+      (declare (ignore key))
+      (when-let ((obj (find-if #'should-display objs)))
+        (display obj))))
+
+  (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
 
 (defun should-display (obj)
-  (or (typep obj 'can-see) (typep obj 'remembered)))
+  (or (typep obj 'can-see) (typep obj 'memory)))
 
 (defparameter *stage-width* 79)
 (defparameter *stage-height* 23)
 
 (defun init-cells (width height)
-  (loop for y below width do
-    (loop for x below height do
+  (loop for y below height do
+    (loop for x below width do
       (let ((cell (make-instance 'cell :x x :y y)))
         (add-object cell)))))
 
