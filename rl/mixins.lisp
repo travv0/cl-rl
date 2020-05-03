@@ -109,10 +109,10 @@
   (when (plusp (cooldown obj))
     (decf (cooldown obj))))
 
-(defmethod display ((obj visible))
+(defmethod display ((obj visible) x y)
   (funcall *display-function*
-           (x obj)
-           (y obj)
+           x
+           y
            (display-char obj)
            (foreground-color obj)
            (background-color obj)

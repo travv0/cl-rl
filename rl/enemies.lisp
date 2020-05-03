@@ -8,7 +8,8 @@
                  :accessor enemy-state)
    (%wandering-to :initform (random-pos)
                   :accessor wandering-to)
-   (%char :initform (error "enemies must have a char set"))))
+   (%char :initform (error "enemies must have a char set"))
+   (%view-distance :initform 10 :initarg :view-distance :accessor view-distance)))
 
 (defclass goblin (enemy right-arm)
   ((%char :initform #\g)
@@ -39,10 +40,12 @@
     (:wandering
      (move-toward-goal enemy (wandering-to enemy))
      (cond ((and (can-see-p enemy *player*)
+                 (< (distance enemy *player*) (view-distance enemy))
                  (< (random 5) 4))
             (setf (enemy-state enemy) :chasing))
            ((and (zerop (dx enemy)) (zerop (dy enemy)))
             (setf (wandering-to enemy) (random-pos)))))
     (:sleeping (when (and (can-see-p enemy *player*)
+                          (< (distance enemy *player*) (view-distance enemy))
                           (zerop (random 5)))
                  (setf (enemy-state enemy) :chasing)))))

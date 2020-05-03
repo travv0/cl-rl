@@ -47,11 +47,16 @@
            (charms/ll:wattroff ,winptr charms/ll:a_bold))))))
 
 (defun display (x y char foreground-color background-color bold)
-  (with-colors ((list foreground-color background-color) :bold bold)
-    (charms:write-char-at-point charms:*standard-window*
-                                char
-                                x
-                                y)))
+  (multiple-value-bind (width height)
+      (charms:window-dimensions charms:*standard-window*)
+    (let ((x (+ x (floor width 2)))
+          (y (+ y (floor height 2))))
+      (when (and (<= 0 x (1- width)) (<= 0 y (1- height)))
+        (with-colors ((list foreground-color background-color) :bold bold)
+          (charms:write-char-at-point charms:*standard-window*
+                                      char
+                                      x
+                                      y))))))
 
 (defvar *key-action-map* (make-hash-table))
 
@@ -83,6 +88,13 @@
 (defun get-char-code ()
   (ignore-errors (char-code (charms:get-char charms:*standard-window* :ignore-error t))))
 
+(defun clear-screen (window)
+  (multiple-value-bind (width height)
+      (charms:window-dimensions window)
+    (loop for y below height do
+      (loop for x below width do
+        (display x y #\Space :black :black nil)))))
+
 (defun main ()
   (load-keys)
   (handler-case
@@ -97,14 +109,15 @@
 
         (rl:initialize)
 
-        (charms:clear-window charms:*standard-window*)
+        (clear-screen charms:*standard-window*)
         (rl:tick 'display nil)
         (charms:refresh-window charms:*standard-window*)
 
         (loop for c = (get-char-code)
               when c
-                do (charms:clear-window charms:*standard-window*)
+                do (charms:clear-window charms:*standard-window* :force-repaint t)
+                   (clear-screen charms:*standard-window*)
                    (let ((log (rl:tick 'display (char-to-action c))))
-                     (format t "log:~%~{~a~%~}" log)
+                     ;; (format *error-output* "log:~%~{~a~%~}" log)
                      (charms:refresh-window charms:*standard-window*))))
     (rl::quit-condition ())))

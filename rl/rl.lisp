@@ -79,7 +79,7 @@
   (let ((pos (random-pos)))
     (add-object (make-instance 'potion
                                :x (x pos)
-                               :y (y pos))))))
+                               :y (y pos)))))
 
 (defun tick (display-function action)
   (case action
@@ -135,11 +135,14 @@
                             (removef (gethash (list (x obj) (y obj)) *pos-cache*) obj)
                        else collect obj))
 
-           (let ((*display-function* display-function))
-             (do-hash-table (key objs *pos-cache*)
-               (declare (ignore key))
-               (when-let ((obj (find-if #'should-display objs)))
-                 (display obj))))
+           (unless (typep *player* 'running)
+             (let ((*display-function* display-function))
+               (do-hash-table (key objs *pos-cache*)
+                 (declare (ignore key))
+                 (when-let ((obj (find-if #'should-display objs)))
+                   (display obj
+                            (- (x obj) (x *player*))
+                            (- (y obj) (y *player*)))))))
 
            (unless (cooling-down-p *player*)
              (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
