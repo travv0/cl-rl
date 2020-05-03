@@ -200,7 +200,7 @@
                             (when (typep obj 'opaque)
                               (setf hit-opaque t)))
                    (when-let ((obj (get-object-at-pos pos)))
-                     (unless (eq obj player)
+                     (unless (or (eq obj player) (typep obj 'moveable))
                        (replace-memory obj)))
                    (when hit-opaque
                      (return-from pos-loop)))))))
@@ -255,8 +255,9 @@
 
 (defmethod collide ((obj pos) (moving-obj moveable)))
 
-(defmethod collide :before ((door door) (moving-obj moveable))
+(defmethod collide :before ((door door) (moving-obj cooldown))
   (when (typep door 'solid)
+    (setf (cooldown moving-obj) 3)
     (setf (display-char door) #\')
     (delete-from-mix door 'opaque 'solid)))
 
@@ -284,7 +285,7 @@
       (write-to-log "~a was defeated" (display-name obj))
       (ensure-mix obj 'deleted))))
 
-(defmethod update :after ((obj cooldown))
+(defmethod cool-down ((obj cooldown))
   (when (plusp (cooldown obj))
     (decf (cooldown obj))))
 
@@ -358,18 +359,18 @@
 (defmethod update :before ((enemy enemy))
   (ccase (enemy-state enemy)
     (:chasing (if (and (not (can-see-p enemy *player*))
-                       (zerop (random 20)))
+                       (zerop (random 10)))
                   (setf (enemy-state enemy) :wandering)
                   (move-toward-goal enemy *player*)))
     (:wandering
      (move-toward-goal enemy (wandering-to enemy))
      (cond ((and (can-see-p enemy *player*)
-                 (zerop (random 5)))
+                 (< (random 5) 4))
             (setf (enemy-state enemy) :chasing))
            ((and (zerop (dx enemy)) (zerop (dy enemy)))
             (setf (wandering-to enemy) (random-pos)))))
     (:sleeping (when (and (can-see-p enemy *player*)
-                          (zerop (random 20)))
+                          (zerop (random 5)))
                  (setf (enemy-state enemy) :chasing)))))
 
 (defmethod update :before ((obj moveable))
@@ -541,7 +542,8 @@
     (t (format t "Unknown key: ~a (~d)~%" (code-char action) action)))
 
   (loop do (dolist (obj *game-objects*)
-             (update obj))
+             (cond ((cooling-down-p obj) (cool-down obj))
+                   (t (update obj))))
 
            (setf *game-objects*
                  (loop for obj in *game-objects*
@@ -556,10 +558,14 @@
                (when-let ((obj (find-if #'should-display objs)))
                  (display obj))))
 
-           (mapc (op (delete-from-mix _ 'can-see)) *game-objects*)
+           (unless (cooling-down-p *player*)
+             (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
         while (or (plusp (cooldown *player*)) (typep *player* 'running)))
 
   *log*)
+
+(defun cooling-down-p (obj)
+  (and (typep obj 'cooldown) (plusp (cooldown obj))))
 
 (defun should-display (obj)
   (or (typep obj 'can-see) (typep obj 'memory)))
