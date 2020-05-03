@@ -15,7 +15,15 @@
                  #:str)
     :components ((:module "rl"
                   :components ((:file "package")
+                               (:file "pos")
+                               (:file "level")
+                               (:file "mixins")
                                (:file "astar")
+                               (:file "player")
+                               (:file "enemies")
+                               (:file "items")
+                               (:file "weapons")
+                               (:file "collisions")
                                (:file "rl")))
                  (:module "rl-curses"
                   :components ((:file "package")

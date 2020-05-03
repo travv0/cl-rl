@@ -1,0 +1,63 @@
+(in-package #:rl)
+
+(defmethod collide ((obj pos) (moving-obj moveable)))
+
+(defmethod collide :before ((door door) (moving-obj cooldown))
+  (when (typep door 'solid)
+    (setf (cooldown moving-obj) 3)
+    (setf (display-char door) #\')
+    (delete-from-mix door 'opaque 'solid)))
+
+(defmethod collide :before ((obj item) (moving-obj inventory))
+  (write-to-log "picked up ~:[something~;a~@[n~] ~0@*~a~]"
+                (display-name obj)
+                (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u)))
+  (if (typep obj 'weapon)
+      (setf (equip-right-arm moving-obj) obj)
+      (push obj (inventory moving-obj)))
+  (ensure-mix obj 'deleted))
+
+(defparameter *unarmed-damage* 5)
+(defparameter *unarmed-cooldown* 3)
+
+(defmethod collide :before ((obj health) (arm right-arm))
+  (let ((damage (if (equip-right-arm arm)
+                    (calculate-damage (equip-right-arm arm) (resistances obj))
+                    *unarmed-damage*)))
+    (write-to-log "~a attacked ~a for ~d damage"
+                  (display-name arm)
+                  (display-name obj)
+                  damage)
+    (when (typep arm 'cooldown)
+      (setf (cooldown arm) (if (equip-right-arm arm)
+                               (weapon-cooldown (equip-right-arm arm))
+                               *unarmed-cooldown*)))
+    (decf (health obj) damage)
+    (when (not (plusp (health obj)))
+      (write-to-log "~a was defeated" (display-name obj))
+      (ensure-mix obj 'deleted))))
+
+(defmethod calculate-damage ((weapon weapon) &optional resistances)
+  (let ((damage (damage weapon)))
+    (dolist (modifier (get-modifiers weapon))
+      (let ((modifier-damage 1.2))
+        (when-let ((resistance (find modifier resistances :key 'resistance-to)))
+          (setf modifier-damage (- (* 2 modifier-damage)
+                                   (* (resistance-amount resistance) modifier-damage))))
+        (setf damage (* damage 0.95 modifier-damage))))
+    damage))
+
+(defmethod check-collisions ((obj moveable))
+  (loop with collisions = '()
+        for other-obj in *game-objects*
+        unless (eq obj other-obj)
+          do (loop with previous-step = obj
+                   for step in (get-line obj (pos (+ (x obj) (dx obj))
+                                                  (+ (y obj) (dy obj))))
+                   when (and (not (typep other-obj 'cell))
+                             (not (typep other-obj 'memory))
+                             (= (x step) (x other-obj))
+                             (= (y step) (y other-obj)))
+                     do (push (cons other-obj previous-step) collisions)
+                   do (setf previous-step step))
+        finally (return collisions)))

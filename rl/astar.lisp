@@ -1,4 +1,4 @@
-(in-package :astar)
+(in-package #:rl)
 
 (defstruct node
   path
@@ -48,3 +48,59 @@
 
 (defun less-than (x y)
   (or (null y) (< x y)))
+
+(defun wall-p (x y dir)
+  (ccase dir
+    (:up (some (op (typep _ 'wall)) (get-objects-at-pos (pos x (1- y)))))
+    (:down (some (op (typep _ 'wall)) (get-objects-at-pos (pos x (1+ y)))))
+    (:left (some (op (typep _ 'wall)) (get-objects-at-pos (pos (1- x) y))))
+    (:right (some (op (typep _ 'wall)) (get-objects-at-pos (pos (1+ x) y))))))
+
+(defmethod wall-different-p ((obj pos) prev-x prev-y)
+  (with-accessors ((x x) (y y)) obj
+    (or (and (/= x prev-x) (or (not (eql (wall-p x y :up)
+                                         (wall-p prev-x prev-y :up)))
+                               (not (eql (wall-p x y :down)
+                                         (wall-p prev-x prev-y :down)))))
+        (and (/= y prev-y) (or (not (eql (wall-p x y :left)
+                                         (wall-p prev-x prev-y :left)))
+                               (not (eql (wall-p x y :right)
+                                         (wall-p prev-x prev-y :right))))))))
+
+(defun get-heuristic (start end)
+  (+ (abs (- (car start) (car end)))
+     (abs (- (cdr start) (cdr end)))))
+
+(defun get-neighbors (pos goal-pos)
+  (mapcar (lambda (c) (cons (cons (x c) (y c)) 1))
+          (remove-if (lambda (pos) (member-if (op (and (typep _1 'solid)
+                                                       (not (and (= (x pos) (x goal-pos))
+                                                                 (= (y pos) (y goal-pos))))
+                                                       (not (typep _1 'door))))
+                                              (get-objects-at-pos pos)))
+                     (list
+                      (pos (car pos) (1- (cdr pos)))
+                      (pos (car pos) (1+ (cdr pos)))
+                      (pos (1- (car pos)) (cdr pos))
+                      (pos (1+ (car pos)) (cdr pos))
+                      (pos (1- (car pos)) (1- (cdr pos)))
+                      (pos (1+ (car pos)) (1- (cdr pos)))
+                      (pos (1+ (car pos)) (1+ (cdr pos)))
+                      (pos (1- (car pos)) (1+ (cdr pos)))))))
+
+(defmethod find-path ((pos pos) (goal-pos pos))
+  (let ((node (find-shortest-path (cons (x pos) (y pos))
+                                        (cons (x goal-pos) (y goal-pos))
+                                        (rcurry 'get-neighbors goal-pos)
+                                        'get-heuristic)))
+    (when node (reverse (node-path node)))))
+
+(defmethod move-toward-goal ((obj moveable) (goal-pos pos))
+  (let ((path (find-path obj goal-pos)))
+    (when path
+      (when-let* ((next-pos (second path))
+                  (dx (- (car next-pos) (x obj)))
+                  (dy (- (cdr next-pos) (y obj))))
+        (setf (dx obj) dx
+              (dy obj) dy)
+        t))))
