@@ -6,6 +6,7 @@
                 #:when-let
                 #:when-let*
                 #:curry
+                #:rcurry
                 #:removef
                 #:lastcar)
   (:import-from #:serapeum
