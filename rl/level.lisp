@@ -31,8 +31,8 @@
 (defun should-display (obj)
   (or (typep obj 'can-see) (typep obj 'memory)))
 
-(defparameter *stage-width* 49)
-(defparameter *stage-height* 23)
+(defparameter *stage-width* 79)
+(defparameter *stage-height* 79)
 
 (defun init-cells (width height)
   (loop for y below height do
@@ -41,13 +41,12 @@
         (add-object cell)))))
 
 (defun init-floor (width height)
-  (let* ((extent (- (ceiling (min (/ width 2) (/ height 2))) 2))
-         (stage (dungen:make-stage :density 0.5
-                                   :wild-factor 0.1
-                                   :room-extent (if (evenp extent) (1- extent) extent)
-                                   :door-rate 0.1
-                                   :width width
-                                   :height height)))
+  (let ((stage (dungen:make-stage :density 1
+                                  :wild-factor 0
+                                  :room-extent 19
+                                  :door-rate 1.0
+                                  :width width
+                                  :height height)))
     (loop for y from (1- (dungen:stage-height stage)) downto 0 do
       (loop for x below (dungen:stage-width stage)
             for cell = (dungen:get-cell stage x y)
