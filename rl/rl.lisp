@@ -83,7 +83,8 @@
   ((%inventory :initarg :inventory :initform '() :accessor inventory)))
 
 (defclass health ()
-  ((%health :initarg :health :initform 100 :accessor health)))
+  ((%health :initarg :health :initform 100 :accessor health)
+   (%resistances :initform '() :initarg :resistances :accessor resistances)))
 
 (defclass equip-weapon ()
   ())
@@ -95,7 +96,8 @@
   ((%equip-left-arm :initarg :equip-left-arm :initform nil :accessor equip-left-arm)))
 
 (defclass player (moveable visible solid inventory can-see health right-arm left-arm)
-  ((%char :initform #\@)))
+  ((%char :initform #\@)
+   (%equip-right-arm :initform (make-instance (mix 'fire 'ice 'sword)))))
 
 (defclass enemy (solid moveable visible health)
   ((%enemy-state :initarg :enemy-state
@@ -107,10 +109,18 @@
                   :accessor wandering-to)
    (%char :initform (error "enemies must have a char set"))))
 
-(defclass goblin (enemy)
+(defun make-resistance (type &optional amount)
+  (let ((resistance (make-instance 'resistance :resistance-to (find-class type))))
+    (when amount
+      (setf (resistance-amount resistance) amount))
+    resistance))
+
+(defclass goblin (enemy right-arm)
   ((%char :initform #\g)
    (%foreground-color :initform :green)
-   (%bold-color :initform nil)))
+   (%bold-color :initform nil)
+   (%equip-right-arm :initform (make-instance 'sword))
+   (%resistances :initform (list (make-resistance 'fire 0.8)))))
 
 (defclass wall (visible solid opaque)
   ((%char :initform #\#)
@@ -157,6 +167,14 @@
 
 (defclass cell (visible)
   ((%char :initform #\.)))
+
+(defclass resistance ()
+  ((%resistance-to :initarg :resistance-to
+                   :initform (error "resistence-to must be specified")
+                   :accessor resistance-to)
+   (%resistance-amount :initarg :resistance-amount
+                       :initform 1.2
+                       :accessor resistance-amount)))
 
 (defparameter *log* '())
 
@@ -248,10 +266,7 @@
                       (mixin-class (lastcar (c2mop:class-direct-superclasses (class-of obj))))
                       (t (first (c2mop:class-precedence-list (class-of obj))))))))
         (obj-modifiers (mapcar (op (string-downcase (class-name _)))
-                               (remove-if (op (or (typep _1 'mixin-class)
-                                                  (eq _1 (find-class 'modifier))
-                                                  (not (c2mop:subtypep _1 (find-class 'modifier)))))
-                                          (c2mop:class-precedence-list (class-of obj))))))
+                               (get-modifiers obj))))
     (format nil "~{~a ~}~a" obj-modifiers obj-name)))
 
 (defmethod collide ((obj pos) (moving-obj moveable)))
@@ -271,12 +286,28 @@
       (push obj (inventory moving-obj)))
   (ensure-mix obj 'deleted))
 
+(defun get-modifiers (obj)
+  (remove-if (op (or (typep _1 'mixin-class)
+                     (eq _1 (find-class 'modifier))
+                     (not (c2mop:subtypep _1 (find-class 'modifier)))))
+             (c2mop:class-precedence-list (class-of obj))))
+
+(defmethod calculate-damage ((weapon weapon) &optional resistances)
+  (let ((damage (damage weapon)))
+    (dolist (modifier (get-modifiers weapon))
+      (let ((modifier-damage 1.2))
+        (when-let ((resistance (find modifier resistances :key 'resistance-to)))
+          (setf modifier-damage (- (* 2 modifier-damage)
+                                   (* (resistance-amount resistance) modifier-damage))))
+        (setf damage (* damage 0.95 modifier-damage))))
+    damage))
+
 (defparameter *unarmed-damage* 5)
 (defparameter *unarmed-cooldown* 3)
 
 (defmethod collide :before ((obj health) (arm right-arm))
   (let ((damage (if (equip-right-arm arm)
-                    (damage (equip-right-arm arm))
+                    (calculate-damage (equip-right-arm arm) (resistances obj))
                     *unarmed-damage*)))
     (write-to-log "~a attacked ~a for ~d damage"
                   (display-name arm)
@@ -501,8 +532,6 @@
   (let ((pos (random-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
   (add-object *player*)
-  (let ((pos (random-pos)))
-    (add-object (make-instance (mix 'fire 'ice 'sword) :x (x pos) :y (y pos))))
   (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'goblin :x (x pos) :y (y pos))))))
@@ -547,7 +576,10 @@
     (:quit (error 'quit-condition))
     (t (format t "Unknown key: ~a (~d)~%" (code-char action) action)))
 
-  (loop do (dolist (obj *game-objects*)
+  (loop do (when (not (plusp (health *player*)))
+             (initialize))
+
+           (dolist (obj *game-objects*)
              (cond ((cooling-down-p obj) (cool-down obj))
                    (t (update obj))))
 
