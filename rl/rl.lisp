@@ -69,11 +69,17 @@
   (add-object *player*)
   (loop repeat 5 do
     (let ((pos (random-pos)))
-      (add-object (make-instance (if (zerop (random 2))
-                                     'goblin
-                                     'goblin-fighter)
+      (add-object (make-instance 'goblin
                                  :x (x pos)
-                                 :y (y pos))))))
+                                 :y (y pos)))))
+  (let ((pos (random-pos)))
+    (add-object (make-instance 'rat
+                               :x (x pos)
+                               :y (y pos))))
+  (let ((pos (random-pos)))
+    (add-object (make-instance 'potion
+                               :x (x pos)
+                               :y (y pos))))))
 
 (defun tick (display-function action)
   (case action

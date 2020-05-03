@@ -20,6 +20,12 @@
   ((%bold-color :initform t)
    (%equip-right-arm :initform (make-instance 'sword))))
 
+(defclass rat (enemy right-arm)
+  ((%char :initform #\r)
+   (%foreground-color :initform :white)
+   (%bold-color :initform nil)
+   (%health :initform 30)))
+
 (defmethod print-object ((enemy enemy) stream)
   (print-unreadable-object (enemy stream :type t :identity t)
     (format stream "(~d, ~d) ~s" (x enemy) (y enemy) (enemy-state enemy))))
