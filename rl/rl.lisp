@@ -131,7 +131,8 @@
   ((%damage :initarg :damage :initform 30 :accessor damage)))
 
 (defclass weapon (item)
-  ((%char :initform #\))))
+  ((%char :initform #\))
+   (%weapon-cooldown :initarg :weapon-cooldown :initform 4 :accessor weapon-cooldown)))
 
 (defclass modifier ()
   ())
@@ -271,6 +272,7 @@
   (ensure-mix obj 'deleted))
 
 (defparameter *melee-damage* 5)
+(defparameter *melee-cooldown* 3)
 
 (defmethod collide :before ((obj health) (arm right-arm))
   (let ((damage (if (equip-right-arm arm)
@@ -280,6 +282,10 @@
                   (display-name arm)
                   (display-name obj)
                   damage)
+    (when (typep arm 'cooldown)
+      (setf (cooldown arm) (if (equip-right-arm arm)
+                               (weapon-cooldown (equip-right-arm arm))
+                               *melee-cooldown*)))
     (decf (health obj) damage)
     (when (not (plusp (health obj)))
       (write-to-log "~a was defeated" (display-name obj))
