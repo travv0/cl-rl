@@ -48,9 +48,11 @@
     damage))
 
 (defmethod check-collisions ((obj moveable))
+  (declare (optimize speed))
   (loop with collisions = '()
         for other-obj in *game-objects*
-        unless (eq obj other-obj)
+        unless (or (eq obj other-obj) (> (distance obj other-obj) (+ (abs (dx obj))
+                                                                     (abs (dy obj)))))
           do (loop with previous-step = obj
                    for step in (get-line obj (pos (+ (x obj) (dx obj))
                                                   (+ (y obj) (dy obj))))

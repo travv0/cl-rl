@@ -1,5 +1,11 @@
 (in-package #:rl)
 
+(defvar *display-function*
+  (lambda (x y char fg-color bg-color bold)
+    (declare (ignore x y char fg-color bg-color bold))
+    (error "*display-function* must be set to a function that draws entities"))
+  "function that displays entites")
+
 (defclass cooldown ()
   ((%cooldown :initform 0 :accessor cooldown)))
 

@@ -15,8 +15,6 @@
 (defun remove-update-fn (classes)
   (remhash (sort classes #'string<) *update-fns*))
 
-(defparameter *pos-cache* (serapeum:dict))
-
 (defparameter *log* '())
 
 (defun write-to-log (format-control &rest format-args)
@@ -40,16 +38,6 @@
           (obj-modifiers (mapcar (op (format-name _))
                                  (get-modifiers obj))))
       (format nil "~{~a ~}~a" obj-modifiers obj-name))))
-
-(defvar *display-function*
-  (lambda (x y char fg-color bg-color bold)
-    (declare (ignore x y char fg-color bg-color bold))
-    (error "*display-function* must be set to a function that draws entities"))
-  "function that displays entites")
-
-(defvar *player*)
-
-(defparameter *game-objects* '())
 
 (define-condition quit-condition () ())
 

@@ -11,13 +11,8 @@
 (defun pos (x y)
   (make-instance 'pos :x x :y y))
 
-(defun random-pos ()
-  (loop for x = (random *stage-width*)
-        for y = (random *stage-height*)
-        unless (member-if (op (typep _ 'solid)) (get-objects-at-pos (pos x y)))
-          do (return (pos x y))))
-
 (defmethod distance ((p1 pos) (p2 pos))
+  (declare (optimize speed))
   (sqrt (+ (expt (- (x p2) (x p1)) 2)
            (expt (- (y p2) (y p1)) 2))))
 
@@ -45,6 +40,7 @@
         finally (return t)))
 
 (defmethod get-line ((start pos) (end pos))
+  (declare (optimize speed))
   (let* ((x1 (x start))
          (y1 (y start))
          (x2 (x end))

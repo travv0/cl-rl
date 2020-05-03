@@ -39,8 +39,8 @@
                   (move-toward-goal enemy *player*)))
     (:wandering
      (move-toward-goal enemy (wandering-to enemy))
-     (cond ((and (can-see-p enemy *player*)
-                 (< (distance enemy *player*) (view-distance enemy))
+     (cond ((and (< (distance enemy *player*) (view-distance enemy))
+                 (can-see-p enemy *player*)
                  (< (random 5) 4))
             (setf (enemy-state enemy) :chasing))
            ((and (zerop (dx enemy)) (zerop (dy enemy)))

@@ -1,5 +1,8 @@
 (in-package #:rl)
 
+(defparameter *pos-cache* (serapeum:dict))
+(defparameter *game-objects* '())
+
 (defclass memory (visible)
   ((%foreground-color :initform :blue)
    (%background-color :initform :black)
@@ -41,7 +44,7 @@
         (add-object cell)))))
 
 (defun init-floor (width height)
-  (let ((stage (dungen:make-stage :density 1
+  (let ((stage (dungen:make-stage :density 0.8
                                   :wild-factor 0
                                   :room-extent 19
                                   :door-rate 1.0
@@ -67,3 +70,9 @@
 
 (defun get-object-at-pos (pos)
   (find-if #'should-display (gethash (list (x pos) (y pos)) *pos-cache*)))
+
+(defun random-pos ()
+  (loop for x = (random *stage-width*)
+        for y = (random *stage-height*)
+        unless (member-if (op (typep _ 'solid)) (get-objects-at-pos (pos x y)))
+          do (return (pos x y))))

@@ -15,8 +15,8 @@
                  #:str)
     :components ((:module "rl"
                   :components ((:file "package")
-                               (:file "pos")
                                (:file "level")
+                               (:file "pos")
                                (:file "mixins")
                                (:file "astar")
                                (:file "player")

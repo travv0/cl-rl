@@ -1,5 +1,7 @@
 (in-package #:rl)
 
+(defvar *player*)
+
 (defclass player (moveable visible solid inventory can-see health right-arm left-arm)
   ((%char :initform #\@)
    (%equip-right-arm :initform (make-instance (mix 'fire 'ice 'sword)))))
