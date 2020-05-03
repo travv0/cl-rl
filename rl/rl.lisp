@@ -271,13 +271,13 @@
       (push obj (inventory moving-obj)))
   (ensure-mix obj 'deleted))
 
-(defparameter *melee-damage* 5)
-(defparameter *melee-cooldown* 3)
+(defparameter *unarmed-damage* 5)
+(defparameter *unarmed-cooldown* 3)
 
 (defmethod collide :before ((obj health) (arm right-arm))
   (let ((damage (if (equip-right-arm arm)
                     (damage (equip-right-arm arm))
-                    *melee-damage*)))
+                    *unarmed-damage*)))
     (write-to-log "~a attacked ~a for ~d damage"
                   (display-name arm)
                   (display-name obj)
@@ -285,7 +285,7 @@
     (when (typep arm 'cooldown)
       (setf (cooldown arm) (if (equip-right-arm arm)
                                (weapon-cooldown (equip-right-arm arm))
-                               *melee-cooldown*)))
+                               *unarmed-cooldown*)))
     (decf (health obj) damage)
     (when (not (plusp (health obj)))
       (write-to-log "~a was defeated" (display-name obj))
