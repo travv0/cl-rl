@@ -119,8 +119,11 @@
   ((%char :initform #\g)
    (%foreground-color :initform :green)
    (%bold-color :initform nil)
-   (%equip-right-arm :initform (make-instance 'sword))
    (%resistances :initform (list (make-resistance 'fire 0.8)))))
+
+(defclass goblin-fighter (goblin)
+  ((%bold-color :initform t)
+   (%equip-right-arm :initform (make-instance 'sword))))
 
 (defclass wall (visible solid opaque)
   ((%char :initform #\#)
@@ -260,14 +263,15 @@
           (slot-value obj '%y) new-y)))
 
 (defmethod display-name (obj)
-  (let ((obj-name (string-downcase
-                   (class-name
-                    (typecase (class-of obj)
-                      (mixin-class (lastcar (c2mop:class-direct-superclasses (class-of obj))))
-                      (t (first (c2mop:class-precedence-list (class-of obj))))))))
-        (obj-modifiers (mapcar (op (string-downcase (class-name _)))
-                               (get-modifiers obj))))
-    (format nil "~{~a ~}~a" obj-modifiers obj-name)))
+  (flet ((format-name (class)
+           (str:replace-all "-" " " (string-downcase (class-name class)))))
+    (let ((obj-name (format-name
+                     (typecase (class-of obj)
+                       (mixin-class (lastcar (c2mop:class-direct-superclasses (class-of obj))))
+                       (t (first (c2mop:class-precedence-list (class-of obj)))))))
+          (obj-modifiers (mapcar (op (format-name _))
+                                 (get-modifiers obj))))
+      (format nil "~{~a ~}~a" obj-modifiers obj-name))))
 
 (defmethod collide ((obj pos) (moving-obj moveable)))
 
@@ -534,7 +538,11 @@
   (add-object *player*)
   (loop repeat 5 do
     (let ((pos (random-pos)))
-      (add-object (make-instance 'goblin :x (x pos) :y (y pos))))))
+      (add-object (make-instance (if (zerop (random 2))
+                                     'goblin
+                                     'goblin-fighter)
+                                 :x (x pos)
+                                 :y (y pos))))))
 
 (defun tick (display-function action)
   (case action

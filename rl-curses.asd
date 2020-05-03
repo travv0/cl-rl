@@ -11,7 +11,8 @@
                  #:alexandria
                  #:serapeum
                  #:dungen
-                 #:dynamic-mixins)
+                 #:dynamic-mixins
+                 #:str)
     :components ((:module "rl"
                   :components ((:file "package")
                                (:file "astar")
