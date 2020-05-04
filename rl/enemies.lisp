@@ -8,24 +8,16 @@
                  :accessor enemy-state)
    (%wandering-to :initform (random-pos)
                   :accessor wandering-to)
-   (%char :initform (error "enemies must have a char set"))
    (%view-distance :initform 30 :initarg :view-distance :accessor view-distance)))
 
 (defclass goblin (enemy right-arm)
-  ((%char :initform #\g)
-   (%foreground-color :initform :green)
-   (%bold-color :initform nil)
-   (%resistances :initform (list (make-resistance 'fire 0.8)))))
+  ((%resistances :initform (list (make-resistance 'fire 0.8)))))
 
 (defclass goblin-fighter (goblin)
-  ((%bold-color :initform t)
-   (%equip-right-arm :initform (make-instance 'sword))))
+  ((%equip-right-arm :initform (make-instance 'sword))))
 
 (defclass rat (enemy right-arm)
-  ((%char :initform #\r)
-   (%foreground-color :initform :white)
-   (%bold-color :initform nil)
-   (%health :initform 30)))
+  ((%health :initform 30)))
 
 (defmethod print-object ((enemy enemy) stream)
   (print-unreadable-object (enemy stream :type t :identity t)

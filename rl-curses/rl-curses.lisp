@@ -46,17 +46,40 @@
          (when ,bold
            (charms/ll:wattroff ,winptr charms/ll:a_bold))))))
 
-(defun display (x y char foreground-color background-color bold)
-  (multiple-value-bind (width height)
-      (charms:window-dimensions charms:*standard-window*)
-    (let ((x (+ x (floor width 2)))
-          (y (+ y (floor height 2))))
-      (when (and (<= 0 x (1- width)) (<= 0 y (1- height)))
-        (with-colors ((list foreground-color background-color) :bold bold)
-          (charms:write-char-at-point charms:*standard-window*
-                                      char
-                                      x
-                                      y))))))
+(defun display-each (objects)
+  (dolist (obj objects)
+    (display obj)))
+
+(defun display (obj &optional memory-p)
+  (with-accessors ((x rl:x) (y rl:y)) obj
+    (destructuring-bind (char fg bg bold)
+        (etypecase obj
+          (rl:player (list #\@ :white :black t))
+          (rl:cell (list #\. :white :black nil))
+          (rl:wall (list #\# :yellow :black nil))
+          (rl:door (list (if (typep obj 'rl::solid) #\+ #\') :red :black nil))
+          (rl:goblin (list #\g :green :black nil))
+          (rl:rat (list #\r :white :black nil))
+          (rl:item (list #\! :yellow :black t))
+          (rl:memory
+           (display (make-instance (rl:memory-of obj) :x x :y y) t)
+           (return-from display)))
+      (draw x y char fg bg bold memory-p))))
+
+(defun draw (x y char foreground-color background-color bold &optional memory-p)
+  (let ((foreground-color (if memory-p :blue foreground-color))
+        (background-color (if memory-p :black background-color))
+        (bold (if memory-p nil bold)))
+    (multiple-value-bind (width height)
+        (charms:window-dimensions charms:*standard-window*)
+      (let ((x (+ (- x (rl:x (rl:player))) (floor width 2)))
+            (y (+ (- y (rl:y (rl:player))) (floor height 2))))
+        (when (and (<= 0 x (1- width)) (<= 0 y (1- height)))
+          (with-colors ((list foreground-color background-color) :bold bold)
+            (charms:write-char-at-point charms:*standard-window*
+                                        char
+                                        x
+                                        y)))))))
 
 (defvar *key-action-map* (make-hash-table))
 
@@ -93,7 +116,7 @@
       (charms:window-dimensions window)
     (loop for y below height do
       (loop for x below width do
-        (display x y #\Space :black :black nil)))))
+        (draw x y #\Space :black :black nil)))))
 
 (defun main ()
   (load-keys)
@@ -109,15 +132,16 @@
 
         (rl:initialize)
 
+        (charms:clear-window charms:*standard-window* :force-repaint t)
         (clear-screen charms:*standard-window*)
-        (rl:tick 'display nil)
+        (rl:tick nil)
         (charms:refresh-window charms:*standard-window*)
 
         (loop for c = (get-char-code)
               when c
                 do (charms:clear-window charms:*standard-window* :force-repaint t)
                    (clear-screen charms:*standard-window*)
-                   (let ((log (rl:tick 'display (char-to-action c))))
-                     ;; (format *error-output* "log:~%~{~a~%~}" log)
-                     (charms:refresh-window charms:*standard-window*))))
+                   (let ((state (rl:tick (char-to-action c))))
+                     (display-each (getf state :objects)))
+                   (charms:refresh-window charms:*standard-window*)))
     (rl::quit-condition ())))

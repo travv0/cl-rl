@@ -5,7 +5,6 @@
 (defmethod collide :before ((door door) (moving-obj cooldown))
   (when (typep door 'solid)
     (setf (cooldown moving-obj) 3)
-    (setf (display-char door) #\')
     (delete-from-mix door 'opaque 'solid)))
 
 (defmethod collide :before ((obj item) (moving-obj inventory))

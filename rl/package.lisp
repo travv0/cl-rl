@@ -15,7 +15,18 @@
   (:export #:*display-function*
            #:tick
            #:initialize
-           #:error-condition))
+           #:error-condition
+           #:player
+           #:cell
+           #:wall
+           #:door
+           #:memory
+           #:memory-of
+           #:item
+           #:goblin
+           #:rat
+           #:x
+           #:y))
 
 (defpackage #:astar
   (:use #:cl)

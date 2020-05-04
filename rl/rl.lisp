@@ -46,6 +46,17 @@
   (when (typep obj 'pos)
     (push obj (aref *pos-cache* (x obj) (y obj)))))
 
+(defun dump-state ()
+  (list :health (health *player*)
+        :log *log*
+        :objects (loop with result = '()
+                       for y below (array-dimension *pos-cache* 1)
+                       finally (return result)
+                       do (loop for x below (array-dimension *pos-cache* 0)
+                                for obj = (get-object-at-pos (pos x y))
+                                when obj
+                                  do (push obj result)))))
+
 (defun initialize ()
   (setf *log* '())
   (setf *game-objects* '())
@@ -71,7 +82,7 @@
                                :x (x pos)
                                :y (y pos)))))
 
-(defun tick (display-function action)
+(defun tick (action)
   (case action
     ((nil))
     (:move-left (setf (dx *player*) -1))
@@ -114,6 +125,9 @@
   (loop do (when (not (plusp (health *player*)))
              (initialize))
 
+           (unless (cooling-down-p *player*)
+             (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
+
            (dolist (obj *game-objects*)
              (cond ((cooling-down-p obj) (cool-down obj))
                    (t (update obj))))
@@ -124,19 +138,6 @@
                          do (delete-from-mix obj 'deleted)
                             (removef (aref *pos-cache* (x obj) (y obj)) obj)
                        else collect obj))
-
-           (unless (typep *player* 'running)
-             (let ((*display-function* display-function))
-               (loop for y below (array-dimension *pos-cache* 1) do
-                 (loop for x below (array-dimension *pos-cache* 0) do
-                   (when-let* ((objs (aref *pos-cache* x y))
-                               (obj (find-if #'should-display objs)))
-                     (display obj
-                              (- (x obj) (x *player*))
-                              (- (y obj) (y *player*))))))))
-
-           (unless (cooling-down-p *player*)
-             (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
         while (or (plusp (cooldown *player*)) (typep *player* 'running)))
 
-  *log*)
+  (dump-state))

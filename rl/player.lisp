@@ -1,10 +1,10 @@
 (in-package #:rl)
 
 (defvar *player*)
+(defun player () *player*)
 
 (defclass player (moveable visible solid inventory can-see health right-arm left-arm)
-  ((%char :initform #\@)
-   (%equip-right-arm :initform (make-instance (mix 'fire 'ice 'sword)))))
+  ((%equip-right-arm :initform (make-instance (mix 'fire 'ice 'sword)))))
 
 (defmethod update ((player player))
   (loop for y below (array-dimension *pos-cache* 1) do

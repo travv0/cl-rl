@@ -1,11 +1,5 @@
 (in-package #:rl)
 
-(defvar *display-function*
-  (lambda (x y char fg-color bg-color bold)
-    (declare (ignore x y char fg-color bg-color bold))
-    (error "*display-function* must be set to a function that draws entities"))
-  "function that displays entites")
-
 (defclass cooldown ()
   ((%cooldown :initform 0 :accessor cooldown)))
 
@@ -16,10 +10,7 @@
    (%move-cooldown :initarg :move-cooldown :initform 5 :accessor move-cooldown)))
 
 (defclass visible (pos)
-  ((%char :initarg :char :accessor display-char)
-   (%foreground-color :initarg :fg-color :accessor foreground-color :initform :white)
-   (%background-color :initarg :bg-color :accessor background-color :initform :black)
-   (%bold-color :initarg :bold :accessor bold-color :initform t)))
+  ())
 
 (defclass can-see ()
   ())
@@ -113,15 +104,6 @@
 (defmethod cool-down ((obj cooldown))
   (when (plusp (cooldown obj))
     (decf (cooldown obj))))
-
-(defmethod display ((obj visible) x y)
-  (funcall *display-function*
-           x
-           y
-           (display-char obj)
-           (foreground-color obj)
-           (background-color obj)
-           (bold-color obj)))
 
 (defun cooling-down-p (obj)
   (and (typep obj 'cooldown) (plusp (cooldown obj))))

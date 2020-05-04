@@ -4,24 +4,18 @@
 (defvar *game-objects*)
 
 (defclass memory (visible)
-  ((%foreground-color :initform :blue)
-   (%background-color :initform :black)
-   (%bold-color :initform nil)))
+  ((%memory-of :initarg :memory-of
+               :initform (error "memory-of must be specified")
+               :reader memory-of)))
 
 (defclass wall (visible solid opaque)
-  ((%char :initform #\#)
-   (%foreground-color :initform :yellow)
-   (%background-color :initform :black)
-   (%bold-color :initform nil)))
+  ())
 
 (defclass door (visible)
-  ((%char :initform #\+)
-   (%foreground-color :initform :red)
-   (%background-color :initform :black)
-   (%bold-color :initform nil)))
+  ())
 
 (defclass cell (visible)
-  ((%char :initform #\.)))
+  ())
 
 (defun replace-memory (obj)
   (let ((cache (aref *pos-cache* (x obj) (y obj))))
@@ -29,7 +23,10 @@
           (remove-if (op (typep _ 'memory)) cache)
           (aref *pos-cache* (x obj) (y obj))
           (append (aref *pos-cache* (x obj) (y obj))
-                  (list (make-instance 'memory :char (display-char obj) :x (x obj) :y (y obj)))))))
+                  (list (make-instance 'memory
+                                       :memory-of (class-of obj)
+                                       :x (x obj)
+                                       :y (y obj)))))))
 
 (defun should-display (obj)
   (or (typep obj 'can-see) (typep obj 'memory)))
