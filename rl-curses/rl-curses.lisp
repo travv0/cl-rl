@@ -84,19 +84,36 @@
 (defun display-health (health)
   (with-colors ('(:white :black))
     (charms:write-string-at-point charms:*standard-window*
-                                  "Health: "
+                                  "H:"
                                   0
-                                  0))
-  (with-colors ('(:green :black))
-    (charms:write-string-at-point charms:*standard-window*
-                                  (make-string (ceiling health 10) :initial-element #\=)
-                                  8
                                   0))
   (with-colors ('(:red :black))
     (charms:write-string-at-point charms:*standard-window*
+                                  (make-string (ceiling health 10) :initial-element #\=)
+                                  2
+                                  0))
+  (with-colors ('(:white :black))
+    (charms:write-string-at-point charms:*standard-window*
                                   (make-string (- 10 (ceiling health 10)) :initial-element #\=)
-                                  (+ 8 (ceiling health 10))
+                                  (+ 2 (ceiling health 10))
                                   0)))
+
+(defun display-stamina (stamina)
+  (with-colors ('(:white :black))
+    (charms:write-string-at-point charms:*standard-window*
+                                  "S:"
+                                  0
+                                  1))
+  (with-colors ('(:green :black))
+    (charms:write-string-at-point charms:*standard-window*
+                                  (make-string (ceiling stamina 10) :initial-element #\=)
+                                  2
+                                  1))
+  (with-colors ('(:white :black))
+    (charms:write-string-at-point charms:*standard-window*
+                                  (make-string (- 10 (ceiling stamina 10)) :initial-element #\=)
+                                  (+ 2 (ceiling stamina 10))
+                                  1)))
 
 (defvar *key-action-map* (make-hash-table))
 
@@ -152,7 +169,9 @@
         (charms:clear-window charms:*standard-window* :force-repaint t)
         (clear-screen charms:*standard-window*)
         (let ((state (rl:tick nil)))
-          (display-each (getf state :objects)))
+          (display-each (getf state :objects))
+          (display-health (getf state :health))
+          (display-stamina 100))
         (charms:refresh-window charms:*standard-window*)
 
         (loop for c = (get-char-code)
@@ -161,6 +180,7 @@
                    (clear-screen charms:*standard-window*)
                    (let ((state (rl:tick (char-to-action c))))
                      (display-each (getf state :objects))
-                     (display-health (getf state :health)))
+                     (display-health (getf state :health))
+                     (display-stamina 100))
                    (charms:refresh-window charms:*standard-window*)))
     (rl::quit-condition ())))
