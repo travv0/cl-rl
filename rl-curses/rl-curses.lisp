@@ -134,7 +134,8 @@
 
         (charms:clear-window charms:*standard-window* :force-repaint t)
         (clear-screen charms:*standard-window*)
-        (rl:tick nil)
+        (let ((state (rl:tick nil)))
+          (display-each (getf state :objects)))
         (charms:refresh-window charms:*standard-window*)
 
         (loop for c = (get-char-code)
