@@ -37,6 +37,14 @@
   (unless (slot-boundp health '%max-health)
     (setf (max-health health) (health health))))
 
+(defclass stamina ()
+  ((%stamina :initarg :stamina :initform 100 :accessor stamina)
+   (%max-stamina :initarg :max-stamina :accessor max-stamina)))
+
+(defmethod initialize-instance :after ((stamina stamina) &key)
+  (unless (slot-boundp stamina '%max-stamina)
+    (setf (max-stamina stamina) (stamina stamina))))
+
 (defclass equip-weapon ()
   ())
 
@@ -47,7 +55,12 @@
   ((%equip-left-arm :initarg :equip-left-arm :initform nil :accessor equip-left-arm)))
 
 (defclass damage ()
-  ((%damage :initarg :damage :initform 30 :accessor damage)))
+  ((%damage :initarg :damage :initform (error "damage must be set") :accessor damage)))
+
+(defclass stamina-use ()
+  ((%stamina-use :initarg :damage
+                 :initform (error "stamina-use must be set")
+                 :accessor stamina-use)))
 
 (defclass modifier ()
   ())

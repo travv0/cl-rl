@@ -81,7 +81,7 @@
                                         x
                                         y)))))))
 
-(defun display-bar (x y label color current max)
+(defun display-bar (x y label color current max &key with-numbers)
   (with-colors ('(:white :black))
     (charms:write-string-at-point charms:*standard-window*
                                   label
@@ -89,22 +89,29 @@
                                   y))
   (with-colors ((list color :black))
     (charms:write-string-at-point charms:*standard-window*
-                                  (make-string (ceiling current 10) :initial-element #\=)
+                                  (make-string (ceiling (max current 0) 10)
+                                               :initial-element #\=)
                                   (+ x (length label))
                                   y))
-  (with-colors ('(:white :black))
+  (with-colors ('(:black :black) :bold t)
     (charms:write-string-at-point charms:*standard-window*
                                   (make-string (- (ceiling max 10)
-                                                  (ceiling current 10))
+                                                  (ceiling (min current max) 10))
                                                :initial-element #\=)
                                   (+ x (length label) (ceiling current 10))
-                                  y)))
+                                  y))
+  (when with-numbers
+    (with-colors ('(:white :black))
+      (charms:write-string-at-point charms:*standard-window*
+                                    (format nil "~d/~d" current max)
+                                    (+ 1 x (length label) (ceiling max 10))
+                                    y))))
 
 (defun display-health (health max-health)
-  (display-bar 0 0 "H:" :red health max-health))
+  (display-bar 0 0 "H:" :red health max-health :with-numbers t))
 
 (defun display-stamina (stamina max-stamina)
-  (display-bar 0 1 "S:" :green stamina max-stamina))
+  (display-bar 0 1 "S:" :green stamina max-stamina :with-numbers t))
 
 (defun display-log (rows log)
   (multiple-value-bind (width height)
@@ -159,7 +166,7 @@
   (let ((state (rl:tick (char-to-action char))))
     (display-each (getf state :objects))
     (display-health (getf state :health) (getf state :max-health))
-    (display-stamina 100 100)
+    (display-stamina (getf state :stamina) (getf state :max-stamina))
     (display-log 5 (getf state :log)))
   (charms:refresh-window charms:*standard-window*))
 

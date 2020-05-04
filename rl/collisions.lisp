@@ -17,12 +17,16 @@
   (ensure-mix obj 'deleted))
 
 (defparameter *unarmed-damage* 5)
+(defparameter *unarmed-stamina* 10)
 (defparameter *unarmed-cooldown* 3)
 
 (defmethod collide :before ((obj health) (arm right-arm))
   (let ((damage (if (equip-right-arm arm)
                     (calculate-damage (equip-right-arm arm) (resistances obj))
-                    *unarmed-damage*)))
+                    *unarmed-damage*))
+        (stamina-use (if (equip-right-arm arm)
+                         (stamina-use (equip-right-arm arm))
+                         *unarmed-stamina*)))
     (write-to-log "~a attacked ~a for ~d damage"
                   (display-name arm)
                   (display-name obj)
@@ -32,6 +36,8 @@
                                (weapon-cooldown (equip-right-arm arm))
                                *unarmed-cooldown*)))
     (decf (health obj) damage)
+    (when (typep arm 'stamina)
+      (decf (stamina arm) stamina-use))
     (when (not (plusp (health obj)))
       (write-to-log "~a was defeated" (display-name obj))
       (ensure-mix obj 'deleted))))
@@ -44,20 +50,19 @@
           (setf modifier-damage (- (* 2 modifier-damage)
                                    (* (resistance-amount resistance) modifier-damage))))
         (setf damage (* damage 0.95 modifier-damage))))
-    damage))
+    (ceiling damage)))
 
 (defmethod check-collisions ((obj moveable))
   (declare (optimize speed))
   (loop with collisions = '()
-        for other-obj in *game-objects*
-        unless (or (eq obj other-obj) (> (distance obj other-obj) (+ (abs (dx obj))
-                                                                     (abs (dy obj)))))
-          do (loop with previous-step = obj
-                   for step in (get-line obj (pos (+ (x obj) (dx obj))
-                                                  (+ (y obj) (dy obj))))
-                   when (and (not (typep other-obj 'cell))
-                             (not (typep other-obj 'memory))
-                             (same step other-obj))
-                     do (push (cons other-obj previous-step) collisions)
-                   do (setf previous-step step))
+        with previous-step = obj
+        for step in (rest (get-line obj (pos (+ (x obj) (dx obj))
+                                             (+ (y obj) (dy obj)))))
+        for objs = (get-objects-at-pos step) do
+          (loop for other-obj in objs
+                when (and (not (typep other-obj 'cell))
+                          (not (typep other-obj 'memory))
+                          (same step other-obj))
+                  do (push (cons other-obj previous-step) collisions)
+                do (setf previous-step step))
         finally (return collisions)))

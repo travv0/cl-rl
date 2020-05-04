@@ -33,6 +33,8 @@
 (defun dump-state ()
   (list :health (health *player*)
         :max-health (max-health *player*)
+        :stamina (stamina *player*)
+        :max-stamina (max-stamina *player*)
         :log *log*
         :objects (loop with result = '()
                        for y below (array-dimension *pos-cache* 1)
@@ -53,16 +55,16 @@
   (let ((pos (random-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
   (add-object *player*)
-  (loop repeat 10 do
+  (loop repeat 50 do
     (let ((pos (random-pos)))
-      (add-object (make-instance 'goblin
+      (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
                                  :x (x pos)
                                  :y (y pos)))))
   (let ((pos (random-pos)))
     (add-object (make-instance 'rat
                                :x (x pos)
                                :y (y pos))))
-  (loop repeat 10 do
+  (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'potion
                                  :x (x pos)

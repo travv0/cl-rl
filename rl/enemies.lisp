@@ -11,13 +11,14 @@
    (%view-distance :initform 30 :initarg :view-distance :accessor view-distance)))
 
 (defclass goblin (enemy right-arm)
-  ((%resistances :initform (list (make-resistance 'fire 0.8)))))
+  ((%health :initform 40)
+   (%resistances :initform (list (make-resistance 'fire 0.8)))))
 
 (defclass goblin-fighter (goblin)
   ((%equip-right-arm :initform (make-instance 'sword))))
 
 (defclass rat (enemy right-arm)
-  ((%health :initform 30)))
+  ((%health :initform 20)))
 
 (defmethod print-object ((enemy enemy) stream)
   (print-unreadable-object (enemy stream :type t :identity t)
