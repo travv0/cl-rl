@@ -153,6 +153,16 @@
       (loop for x below width do
         (draw x y #\Space :black :black nil)))))
 
+(defun update-and-display (char)
+  (charms:clear-window charms:*standard-window* :force-repaint t)
+  (clear-screen charms:*standard-window*)
+  (let ((state (rl:tick (char-to-action char))))
+    (display-each (getf state :objects))
+    (display-health (getf state :health) (getf state :max-health))
+    (display-stamina 100 100)
+    (display-log 5 (getf state :log)))
+  (charms:refresh-window charms:*standard-window*))
+
 (defun main ()
   (load-keys)
   (handler-case
@@ -166,23 +176,9 @@
         (start-color)
 
         (rl:initialize)
-
-        (charms:clear-window charms:*standard-window* :force-repaint t)
-        (clear-screen charms:*standard-window*)
-        (let ((state (rl:tick nil)))
-          (display-each (getf state :objects))
-          (display-health (getf state :health) (getf state :max-health))
-          (display-stamina 100 100))
-        (charms:refresh-window charms:*standard-window*)
+        (update-and-display nil)
 
         (loop for c = (get-char-code)
               when c
-                do (charms:clear-window charms:*standard-window* :force-repaint t)
-                   (clear-screen charms:*standard-window*)
-                   (let ((state (rl:tick (char-to-action c))))
-                     (display-each (getf state :objects))
-                     (display-health (getf state :health) (getf state :max-health))
-                     (display-stamina 100 100)
-                     (display-log 5 (getf state :log)))
-                   (charms:refresh-window charms:*standard-window*)))
+                do (update-and-display c)))
     (rl::quit-condition ())))
