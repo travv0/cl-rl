@@ -106,6 +106,16 @@
 (defun display-stamina (stamina max-stamina)
   (display-bar 0 1 "S:" :green stamina max-stamina))
 
+(defun display-log (rows log)
+  (multiple-value-bind (width height)
+      (charms:window-dimensions charms:*standard-window*)
+    (loop with y = (1- height)
+          for (l next-l) on log
+          while (<= (- height y) rows) do
+            (charms:write-string-at-point charms:*standard-window* l 0 y)
+            (charms:clear-line-after-cursor charms:*standard-window*)
+            (decf y (ceiling (length next-l) width)))))
+
 (defvar *key-action-map* (make-hash-table))
 
 (defun char-to-action (char)
@@ -172,6 +182,7 @@
                    (let ((state (rl:tick (char-to-action c))))
                      (display-each (getf state :objects))
                      (display-health (getf state :health) (getf state :max-health))
-                     (display-stamina 100 100))
+                     (display-stamina 100 100)
+                     (display-log 5 (getf state :log)))
                    (charms:refresh-window charms:*standard-window*)))
     (rl::quit-condition ())))
