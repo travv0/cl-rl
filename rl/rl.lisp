@@ -2,19 +2,6 @@
 
 (in-package #:rl)
 
-(defparameter *update-fns* (serapeum:dict))
-(defmacro multiupdate ((classes obj-name) &body body)
-  (flet ((make-typep (class)
-           `(typep ,obj-name ',class)))
-    `(setf (gethash ',(sort classes #'string<)
-                    *update-fns*)
-           (lambda (,obj-name)
-             (when (and ,@(mapcar #'make-typep classes))
-               ,@body)))))
-
-(defun remove-update-fn (classes)
-  (remhash (sort classes #'string<) *update-fns*))
-
 (defparameter *log* '())
 
 (defun write-to-log (format-control &rest format-args)
@@ -24,9 +11,6 @@
   (:documentation "What the object should do each tick."))
 
 (defmethod update (obj))
-
-(defmethod update :before (obj)
-  (maphash (op (funcall _2 obj)) *update-fns*))
 
 (defmethod display-name (obj)
   (flet ((format-name (class)
@@ -78,10 +62,11 @@
     (add-object (make-instance 'rat
                                :x (x pos)
                                :y (y pos))))
-  (let ((pos (random-pos)))
-    (add-object (make-instance 'potion
-                               :x (x pos)
-                               :y (y pos)))))
+  (loop repeat 10 do
+    (let ((pos (random-pos)))
+      (add-object (make-instance 'potion
+                                 :x (x pos)
+                                 :y (y pos))))))
 
 (defun tick (action)
   (case action
