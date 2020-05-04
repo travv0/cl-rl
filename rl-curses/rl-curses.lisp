@@ -81,6 +81,23 @@
                                         x
                                         y)))))))
 
+(defun display-health (health)
+  (with-colors ('(:white :black))
+    (charms:write-string-at-point charms:*standard-window*
+                                  "Health: "
+                                  0
+                                  0))
+  (with-colors ('(:green :black))
+    (charms:write-string-at-point charms:*standard-window*
+                                  (make-string (ceiling health 10) :initial-element #\=)
+                                  8
+                                  0))
+  (with-colors ('(:red :black))
+    (charms:write-string-at-point charms:*standard-window*
+                                  (make-string (- 10 (ceiling health 10)) :initial-element #\=)
+                                  (+ 8 (ceiling health 10))
+                                  0)))
+
 (defvar *key-action-map* (make-hash-table))
 
 (defun char-to-action (char)
@@ -143,6 +160,7 @@
                 do (charms:clear-window charms:*standard-window* :force-repaint t)
                    (clear-screen charms:*standard-window*)
                    (let ((state (rl:tick (char-to-action c))))
-                     (display-each (getf state :objects)))
+                     (display-each (getf state :objects))
+                     (display-health (getf state :health)))
                    (charms:refresh-window charms:*standard-window*)))
     (rl::quit-condition ())))
