@@ -81,39 +81,30 @@
                                         x
                                         y)))))))
 
-(defun display-health (health)
+(defun display-bar (x y label color current max)
   (with-colors ('(:white :black))
     (charms:write-string-at-point charms:*standard-window*
-                                  "H:"
-                                  0
-                                  0))
-  (with-colors ('(:red :black))
+                                  label
+                                  x
+                                  y))
+  (with-colors ((list color :black))
     (charms:write-string-at-point charms:*standard-window*
-                                  (make-string (ceiling health 10) :initial-element #\=)
-                                  2
-                                  0))
+                                  (make-string (ceiling current 10) :initial-element #\=)
+                                  (+ x (length label))
+                                  y))
   (with-colors ('(:white :black))
     (charms:write-string-at-point charms:*standard-window*
-                                  (make-string (- 10 (ceiling health 10)) :initial-element #\=)
-                                  (+ 2 (ceiling health 10))
-                                  0)))
+                                  (make-string (- (ceiling max 10)
+                                                  (ceiling current 10))
+                                               :initial-element #\=)
+                                  (+ x (length label) (ceiling current 10))
+                                  y)))
 
-(defun display-stamina (stamina)
-  (with-colors ('(:white :black))
-    (charms:write-string-at-point charms:*standard-window*
-                                  "S:"
-                                  0
-                                  1))
-  (with-colors ('(:green :black))
-    (charms:write-string-at-point charms:*standard-window*
-                                  (make-string (ceiling stamina 10) :initial-element #\=)
-                                  2
-                                  1))
-  (with-colors ('(:white :black))
-    (charms:write-string-at-point charms:*standard-window*
-                                  (make-string (- 10 (ceiling stamina 10)) :initial-element #\=)
-                                  (+ 2 (ceiling stamina 10))
-                                  1)))
+(defun display-health (health max-health)
+  (display-bar 0 0 "H:" :red health max-health))
+
+(defun display-stamina (stamina max-stamina)
+  (display-bar 0 1 "S:" :green stamina max-stamina))
 
 (defvar *key-action-map* (make-hash-table))
 
@@ -170,8 +161,8 @@
         (clear-screen charms:*standard-window*)
         (let ((state (rl:tick nil)))
           (display-each (getf state :objects))
-          (display-health (getf state :health))
-          (display-stamina 100))
+          (display-health (getf state :health) (getf state :max-health))
+          (display-stamina 100 100))
         (charms:refresh-window charms:*standard-window*)
 
         (loop for c = (get-char-code)
@@ -180,7 +171,7 @@
                    (clear-screen charms:*standard-window*)
                    (let ((state (rl:tick (char-to-action c))))
                      (display-each (getf state :objects))
-                     (display-health (getf state :health))
-                     (display-stamina 100))
+                     (display-health (getf state :health) (getf state :max-health))
+                     (display-stamina 100 100))
                    (charms:refresh-window charms:*standard-window*)))
     (rl::quit-condition ())))

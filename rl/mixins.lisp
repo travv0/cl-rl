@@ -30,7 +30,12 @@
 
 (defclass health ()
   ((%health :initarg :health :initform 100 :accessor health)
+   (%max-health :initarg :max-health :accessor max-health)
    (%resistances :initform '() :initarg :resistances :accessor resistances)))
+
+(defmethod initialize-instance :after ((health health) &key)
+  (unless (slot-boundp health '%max-health)
+    (setf (max-health health) (health health))))
 
 (defclass equip-weapon ()
   ())

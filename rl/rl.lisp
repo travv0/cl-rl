@@ -48,6 +48,7 @@
 
 (defun dump-state ()
   (list :health (health *player*)
+        :max-health (max-health *player*)
         :log *log*
         :objects (loop with result = '()
                        for y below (array-dimension *pos-cache* 1)
