@@ -1,7 +1,7 @@
 (in-package #:rl)
 
-(defparameter *pos-cache* (serapeum:dict))
-(defparameter *game-objects* '())
+(defvar *pos-cache*)
+(defvar *game-objects*)
 
 (defclass memory (visible)
   ((%foreground-color :initform :blue)
@@ -24,11 +24,11 @@
   ((%char :initform #\.)))
 
 (defun replace-memory (obj)
-  (let ((cache (gethash (list (x obj) (y obj)) *pos-cache*)))
-    (setf (gethash (list (x obj) (y obj)) *pos-cache*)
+  (let ((cache (aref *pos-cache* (x obj) (y obj))))
+    (setf (aref *pos-cache* (x obj) (y obj))
           (remove-if (op (typep _ 'memory)) cache)
-          (gethash (list (x obj) (y obj)) *pos-cache*)
-          (append (gethash (list (x obj) (y obj)) *pos-cache*)
+          (aref *pos-cache* (x obj) (y obj))
+          (append (aref *pos-cache* (x obj) (y obj))
                   (list (make-instance 'memory :char (display-char obj) :x (x obj) :y (y obj)))))))
 
 (defun should-display (obj)
@@ -66,10 +66,14 @@
   (make-instance (mix 'door 'opaque 'solid) :x x :y y))
 
 (defun get-objects-at-pos (pos)
-  (gethash (list (x pos) (y pos)) *pos-cache*))
+  (when (and (<= 0 (x pos) (1- *stage-width*))
+             (<= 0 (y pos) (1- *stage-height*)))
+    (aref *pos-cache* (x pos) (y pos))))
 
 (defun get-object-at-pos (pos)
-  (find-if #'should-display (gethash (list (x pos) (y pos)) *pos-cache*)))
+  (when (and (<= 0 (x pos) (1- *stage-width*))
+             (<= 0 (y pos) (1- *stage-height*)))
+    (find-if #'should-display (aref *pos-cache* (x pos) (y pos)))))
 
 (defun random-pos ()
   (loop for x = (random *stage-width*)

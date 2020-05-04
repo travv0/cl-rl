@@ -44,18 +44,20 @@
 (defun add-object (obj)
   (push obj *game-objects*)
   (when (typep obj 'pos)
-    (push obj (gethash (list (x obj) (y obj)) *pos-cache*))))
+    (push obj (aref *pos-cache* (x obj) (y obj)))))
 
 (defun initialize ()
   (setf *log* '())
   (setf *game-objects* '())
-  (setf *pos-cache* (serapeum:dict))
+  (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
+                                :element-type 'list
+                                :initial-element '()))
   (init-cells *stage-width* *stage-height*)
   (init-floor *stage-width* *stage-height*)
   (let ((pos (random-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
   (add-object *player*)
-  (loop repeat 5 do
+  (loop repeat 10 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'goblin
                                  :x (x pos)
@@ -120,17 +122,18 @@
                  (loop for obj in *game-objects*
                        if (typep obj 'deleted)
                          do (delete-from-mix obj 'deleted)
-                            (removef (gethash (list (x obj) (y obj)) *pos-cache*) obj)
+                            (removef (aref *pos-cache* (x obj) (y obj)) obj)
                        else collect obj))
 
            (unless (typep *player* 'running)
              (let ((*display-function* display-function))
-               (do-hash-table (key objs *pos-cache*)
-                 (declare (ignore key))
-                 (when-let ((obj (find-if #'should-display objs)))
-                   (display obj
-                            (- (x obj) (x *player*))
-                            (- (y obj) (y *player*)))))))
+               (loop for y below (array-dimension *pos-cache* 1) do
+                 (loop for x below (array-dimension *pos-cache* 0) do
+                   (when-let* ((objs (aref *pos-cache* x y))
+                               (obj (find-if #'should-display objs)))
+                     (display obj
+                              (- (x obj) (x *player*))
+                              (- (y obj) (y *player*))))))))
 
            (unless (cooling-down-p *player*)
              (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))

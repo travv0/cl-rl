@@ -7,9 +7,8 @@
    (%equip-right-arm :initform (make-instance (mix 'fire 'ice 'sword)))))
 
 (defmethod update ((player player))
-  (do-hash-table (key objs *pos-cache*)
-    (declare (ignore objs))
-    (destructuring-bind (x y) key
+  (loop for y below (array-dimension *pos-cache* 1) do
+    (loop for x below (array-dimension *pos-cache* 0) do
       (when (or (zerop x)
                 (= x (1- *stage-width*))
                 (zerop y)

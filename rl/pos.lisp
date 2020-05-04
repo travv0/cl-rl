@@ -80,7 +80,7 @@
 
 (defmethod update-pos ((obj pos) new-x new-y)
   (with-accessors ((x x) (y y)) obj
-    (removef (gethash (list x y) *pos-cache*) obj)
-    (push obj (gethash (list new-x new-y) *pos-cache*))
+    (removef (aref *pos-cache* x y) obj)
+    (push obj (aref *pos-cache* new-x new-y))
     (setf (slot-value obj '%x) new-x
           (slot-value obj '%y) new-y)))
