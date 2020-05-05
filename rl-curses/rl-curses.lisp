@@ -59,10 +59,11 @@
     (:goblin (values #\g :green :black nil))
     (:goblin-fighter (values #\g :green :black t))
     (:rat (values #\r :white :black nil))
+    (:warrior (values #\w :red :black nil))
     (:potion (values #\! :yellow :black t))
-    (:sword (values #\) :yellow :black nil))
+    ((:dagger :sword) (values #\) :yellow :black nil))
     (:memory
-     (display (getf attributes :memory-of) t)
+     ;; (display (getf attributes :memory-of) t)
      (return-from get-display-char))
     (t
      #-release (error "~s fell through case expression" name)

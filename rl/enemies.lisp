@@ -18,6 +18,9 @@
 (defclass goblin-fighter (goblin)
   ((%equip-right-arm :initform (make-instance 'dagger))))
 
+(defclass warrior (enemy right-arm)
+  ((%equip-right-arm :initform (make-instance 'sword))))
+
 (defclass rat (enemy right-arm)
   ((%health :initform 20)))
 
