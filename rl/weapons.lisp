@@ -3,7 +3,8 @@
 (defclass weapon (item damage stamina-use)
   ((%weapon-cooldown :initarg :weapon-cooldown
                      :initform (error "weapon-cooldown must be initialized")
-                     :accessor weapon-cooldown)))
+                     :accessor weapon-cooldown)
+   (%weapon-windup :initarg :weapon-windup :accessor weapon-windup)))
 
 (defclass dagger (weapon)
   ((%damage :initform 15)
@@ -15,4 +16,6 @@
 
 (defmethod initialize-instance :after ((weapon weapon) &key)
   (unless (slot-boundp weapon '%stamina-use)
-    (setf (stamina-use weapon) (+ (damage weapon) 5))))
+    (setf (stamina-use weapon) (+ (damage weapon) 5)))
+  (unless (slot-boundp weapon '%weapon-windup)
+    (setf (weapon-windup weapon) (floor (weapon-cooldown weapon) 2))))
