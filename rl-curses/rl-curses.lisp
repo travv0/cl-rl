@@ -60,6 +60,7 @@
     (:goblin-fighter (values #\g :green :black t))
     (:rat (values #\r :white :black nil))
     (:potion (values #\! :yellow :black t))
+    (:sword (values #\) :yellow :black nil))
     (:memory
      (display (getf attributes :memory-of) t)
      (return-from get-display-char))

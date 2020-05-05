@@ -1,6 +1,6 @@
 (in-package #:rl)
 
-(defclass enemy (solid moveable visible health)
+(defclass enemy (solid moveable visible health stamina)
   ((%enemy-state :initarg :enemy-state
                  :initform (if (zerop (random 2))
                                :wandering
@@ -12,10 +12,11 @@
 
 (defclass goblin (enemy right-arm)
   ((%health :initform 40)
+   (%stamina :initform 40)
    (%resistances :initform (list (make-resistance 'fire 0.8)))))
 
 (defclass goblin-fighter (goblin)
-  ((%equip-right-arm :initform (make-instance 'sword))))
+  ((%equip-right-arm :initform (make-instance 'dagger))))
 
 (defclass rat (enemy right-arm)
   ((%health :initform 20)))

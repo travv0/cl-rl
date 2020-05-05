@@ -39,7 +39,8 @@
 
 (defclass stamina ()
   ((%stamina :initarg :stamina :initform 100 :accessor stamina)
-   (%max-stamina :initarg :max-stamina :accessor max-stamina)))
+   (%max-stamina :initarg :max-stamina :accessor max-stamina)
+   (%stamina-recharging :accessor stamina-recharging :initform nil)))
 
 (defmethod initialize-instance :after ((stamina stamina) &key)
   (unless (slot-boundp stamina '%max-stamina)
@@ -58,9 +59,7 @@
   ((%damage :initarg :damage :initform (error "damage must be set") :accessor damage)))
 
 (defclass stamina-use ()
-  ((%stamina-use :initarg :damage
-                 :initform (error "stamina-use must be set")
-                 :accessor stamina-use)))
+  ((%stamina-use :initarg :damage :accessor stamina-use)))
 
 (defclass modifier ()
   ())
@@ -86,6 +85,8 @@
       (setf (resistance-amount resistance) amount))
     resistance))
 
+(defparameter *running-stamina* 3)
+
 (defmethod update :before ((obj moveable))
   (with-accessors ((x x) (y y)
                    (dx dx) (dy dy)
@@ -106,11 +107,18 @@
                 (when (and (zerop dx) (zerop dy))
                   (delete-from-mix obj 'running)
                   (return))))
-      (let ((move-cooldown (if (typep obj 'running)
-                               (round (* move-cooldown 2/3))
-                               move-cooldown)))
-        (setf cooldown move-cooldown)))
+      (unless (and (zerop dx) (zerop dy))
+        (let ((move-cooldown (if (typep obj 'running)
+                                 (round (* move-cooldown 2/3))
+                                 move-cooldown)))
+          (incf cooldown move-cooldown))))
     (update-pos obj (+ x (round dx)) (+ y (round dy)))
+
+    (when (and (typep obj 'stamina) (typep obj 'running))
+      (cond ((< (stamina obj) *running-stamina*)
+             (delete-from-mix obj 'running))
+            (t (decf (stamina obj) *running-stamina*))))
+
     (when (and (typep obj 'running)
                (wall-different-p obj (- x (round dx)) (- y (round dy))))
       (setf dx 0 dy 0)
@@ -118,6 +126,15 @@
     (unless (typep obj 'running)
       (setf dx (- dx (* dx friction))
             dy (- dy (* dy friction))))))
+
+(defmethod update :around ((obj stamina))
+  (let ((start-stamina (stamina obj)))
+    (call-next-method)
+    (unless (< (stamina obj) start-stamina)
+      (let ((increase (if (and (typep obj 'cooldown) (not (zerop (cooldown obj))))
+                          (cooldown obj)
+                          1)))
+        (setf (stamina obj) (min (+ (stamina obj) increase) (max-stamina obj)))))))
 
 (defmethod cool-down ((obj cooldown))
   (when (plusp (cooldown obj))

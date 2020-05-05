@@ -81,7 +81,7 @@
   (let ((pos (random-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
   (add-object *player*)
-  (loop repeat 50 do
+  (loop repeat 10 do
     (let ((pos (random-pos)))
       (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
                                  :x (x pos)
@@ -93,6 +93,11 @@
   (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'potion
+                                 :x (x pos)
+                                 :y (y pos)))))
+  (loop repeat 5 do
+    (let ((pos (random-pos)))
+      (add-object (make-instance 'sword
                                  :x (x pos)
                                  :y (y pos))))))
 
