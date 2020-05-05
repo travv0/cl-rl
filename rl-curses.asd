@@ -12,6 +12,7 @@
                  #:serapeum
                  #:dungen
                  #:dynamic-mixins
+                 #:travv0.utils
                  #:str)
     :components ((:module "rl"
                   :components ((:file "package")

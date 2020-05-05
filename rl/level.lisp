@@ -24,7 +24,7 @@
           (aref *pos-cache* (x obj) (y obj))
           (append (aref *pos-cache* (x obj) (y obj))
                   (list (make-instance 'memory
-                                       :memory-of (class-of obj)
+                                       :memory-of (dump-object obj)
                                        :x (x obj)
                                        :y (y obj)))))))
 
@@ -60,7 +60,7 @@
   (make-instance 'wall :x x :y y))
 
 (defun make-door (x y)
-  (make-instance (mix 'door 'opaque 'solid) :x x :y y))
+  (make-instance (mix 'opaque 'solid 'door) :x x :y y))
 
 (defun get-objects-at-pos (pos)
   (when (and (<= 0 (x pos) (1- *stage-width*))

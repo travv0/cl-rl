@@ -8,25 +8,14 @@
                 #:curry
                 #:rcurry
                 #:removef
+                #:make-keyword
                 #:lastcar)
   (:import-from #:serapeum
                 #:op
                 #:do-hash-table)
-  (:export #:*display-function*
-           #:tick
+  (:export #:tick
            #:initialize
-           #:error-condition
-           #:player
-           #:cell
-           #:wall
-           #:door
-           #:memory
-           #:memory-of
-           #:item
-           #:goblin
-           #:rat
-           #:x
-           #:y))
+           #:error-condition))
 
 (defpackage #:astar
   (:use #:cl)

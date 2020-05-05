@@ -50,21 +50,31 @@
   (dolist (obj objects)
     (display obj)))
 
-(defun display (obj &optional memory-p)
-  (with-accessors ((x rl:x) (y rl:y)) obj
-    (destructuring-bind (char fg bg bold)
-        (etypecase obj
-          (rl:player (list #\@ :white :black t))
-          (rl:cell (list #\. :white :black nil))
-          (rl:wall (list #\# :yellow :black nil))
-          (rl:door (list (if (typep obj 'rl::solid) #\+ #\') :red :black nil))
-          (rl:goblin (list #\g :green :black nil))
-          (rl:rat (list #\r :white :black nil))
-          (rl:item (list #\! :yellow :black t))
-          (rl:memory
-           (display (make-instance (rl:memory-of obj) :x x :y y) t)
-           (return-from display)))
+(defun get-display-char (name attributes)
+  (case name
+    (:player (values #\@ :white :black t))
+    (:cell (values #\. :white :black nil))
+    (:wall (values #\# :yellow :black nil))
+    (:door (values (if (getf attributes :open) #\' #\+) :red :black nil))
+    (:goblin (values #\g :green :black nil))
+    (:goblin-fighter (values #\g :green :black t))
+    (:rat (values #\r :white :black nil))
+    (:potion (values #\! :yellow :black t))
+    (:memory
+     (display (getf attributes :memory-of) t)
+     (return-from get-display-char))
+    (t
+     #-release (error "~s fell through case expression" name)
+     #+release (values #\? :white :black nil))))
+
+(desfun display ((&key name x y attributes) &optional memory-p)
+  (multiple-value-bind (char fg bg bold)
+      (get-display-char name attributes)
+    (when char
       (draw x y char fg bg bold memory-p))))
+
+(defvar *player-x*)
+(defvar *player-y*)
 
 (defun draw (x y char foreground-color background-color bold &optional memory-p)
   (let ((foreground-color (if memory-p :blue foreground-color))
@@ -72,8 +82,8 @@
         (bold (if memory-p nil bold)))
     (multiple-value-bind (width height)
         (charms:window-dimensions charms:*standard-window*)
-      (let ((x (+ (- x (rl:x (rl:player))) (floor width 2)))
-            (y (+ (- y (rl:y (rl:player))) (floor height 2))))
+      (let ((x (+ (- x *player-x*) (floor width 2)))
+            (y (+ (- y *player-y*) (floor height 2))))
         (when (and (<= 0 x (1- width)) (<= 0 y (1- height)))
           (with-colors ((list foreground-color background-color) :bold bold)
             (charms:write-char-at-point charms:*standard-window*
@@ -82,24 +92,25 @@
                                         y)))))))
 
 (defun display-bar (x y label color current max &key with-numbers)
-  (with-colors ('(:white :black))
-    (charms:write-string-at-point charms:*standard-window*
-                                  label
-                                  x
-                                  y))
-  (with-colors ((list color :black))
-    (charms:write-string-at-point charms:*standard-window*
-                                  (make-string (ceiling (max current 0) 10)
-                                               :initial-element #\=)
-                                  (+ x (length label))
-                                  y))
-  (with-colors ('(:black :black) :bold t)
-    (charms:write-string-at-point charms:*standard-window*
-                                  (make-string (- (ceiling max 10)
-                                                  (ceiling (min current max) 10))
-                                               :initial-element #\=)
-                                  (+ x (length label) (ceiling current 10))
-                                  y))
+  (let ((current (max (min current max) 0)))
+    (with-colors ('(:white :black))
+      (charms:write-string-at-point charms:*standard-window*
+                                    label
+                                    x
+                                    y))
+    (with-colors ((list color :black))
+      (charms:write-string-at-point charms:*standard-window*
+                                    (make-string (ceiling current 10)
+                                                 :initial-element #\=)
+                                    (+ x (length label))
+                                    y))
+    (with-colors ('(:black :black) :bold t)
+      (charms:write-string-at-point charms:*standard-window*
+                                    (make-string (- (ceiling max 10)
+                                                    (ceiling current 10))
+                                                 :initial-element #\=)
+                                    (+ x (length label) (ceiling current 10))
+                                    y)))
   (when with-numbers
     (with-colors ('(:white :black))
       (charms:write-string-at-point charms:*standard-window*
@@ -161,14 +172,22 @@
         (draw x y #\Space :black :black nil)))))
 
 (defun update-and-display (char)
-  (charms:clear-window charms:*standard-window* :force-repaint t)
-  (clear-screen charms:*standard-window*)
-  (let ((state (rl:tick (char-to-action char))))
-    (display-each (getf state :objects))
-    (display-health (getf state :health) (getf state :max-health))
-    (display-stamina (getf state :stamina) (getf state :max-stamina))
-    (display-log 5 (getf state :log)))
-  (charms:refresh-window charms:*standard-window*))
+  (destructuring-bind (&key ((:player (&whole player
+                                       &key ((:attributes player-attributes))
+                                       &allow-other-keys)))
+                         objects log)
+      (rl:tick (char-to-action char))
+    (let ((*player-x* (getf player :x))
+          (*player-y* (getf player :y)))
+      (charms:clear-window charms:*standard-window* :force-repaint t)
+      (clear-screen charms:*standard-window*)
+      (display-each objects)
+      (display-health (getf player-attributes :health)
+                      (getf player-attributes :max-health))
+      (display-stamina (getf player-attributes :stamina)
+                       (getf player-attributes :max-stamina))
+      (display-log 5 log)
+      (charms:refresh-window charms:*standard-window*))))
 
 (defun main ()
   (load-keys)

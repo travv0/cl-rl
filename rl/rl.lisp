@@ -12,13 +12,18 @@
 
 (defmethod update (obj))
 
+(defun primary-class-of-mixin (obj)
+  (let ((class (typecase obj
+                 (class obj)
+                 (t (class-of obj)))))
+    (typecase class
+      (mixin-class (lastcar (c2mop:class-direct-superclasses class)))
+      (t (first (c2mop:class-precedence-list class))))))
+
 (defmethod display-name (obj)
   (flet ((format-name (class)
            (str:replace-all "-" " " (string-downcase (class-name class)))))
-    (let ((obj-name (format-name
-                     (typecase (class-of obj)
-                       (mixin-class (lastcar (c2mop:class-direct-superclasses (class-of obj))))
-                       (t (first (c2mop:class-precedence-list (class-of obj)))))))
+    (let ((obj-name (format-name (primary-class-of-mixin obj)))
           (obj-modifiers (mapcar (op (format-name _))
                                  (get-modifiers obj))))
       (format nil "~{~a ~}~a" obj-modifiers obj-name))))
@@ -30,11 +35,32 @@
   (when (typep obj 'pos)
     (push obj (aref *pos-cache* (x obj) (y obj)))))
 
+(defmethod dump-object ((obj visible) &optional attributes)
+  (list :name (make-keyword (class-name (primary-class-of-mixin obj)))
+        :x (x obj)
+        :y (y obj)
+        :attributes attributes))
+
+(defmethod dump-object ((door door) &optional attributes)
+  (call-next-method door (concatenate 'list
+                                      (list :open (not (typep door 'solid)))
+                                      attributes)))
+
+(defmethod dump-object ((memory memory) &optional attributes)
+  (call-next-method memory (concatenate 'list
+                                        (list :memory-of (memory-of memory))
+                                        attributes)))
+
+(defmethod dump-object ((player player) &optional attributes)
+  (call-next-method player (concatenate 'list
+                                        (list :health (health *player*)
+                                              :max-health (max-health *player*)
+                                              :stamina (stamina *player*)
+                                              :max-stamina (max-stamina *player*))
+                                        attributes)))
+
 (defun dump-state ()
-  (list :health (health *player*)
-        :max-health (max-health *player*)
-        :stamina (stamina *player*)
-        :max-stamina (max-stamina *player*)
+  (list :player (dump-object *player*)
         :log *log*
         :objects (loop with result = '()
                        for y below (array-dimension *pos-cache* 1)
@@ -42,7 +68,7 @@
                        do (loop for x below (array-dimension *pos-cache* 0)
                                 for obj = (get-object-at-pos (pos x y))
                                 when obj
-                                  do (push obj result)))))
+                                  do (push (dump-object obj) result)))))
 
 (defun initialize ()
   (setf *log* '())
