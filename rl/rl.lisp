@@ -60,9 +60,12 @@
                                               :previous-stamina (previous-stamina *player*))
                                         attributes)))
 
+(defvar *turn* 1)
+
 (defun dump-state ()
   (list :player (dump-object *player*)
         :log *log*
+        :turn *turn*
         :objects (loop with result = '()
                        for y below (array-dimension *pos-cache* 1)
                        finally (return result)
@@ -72,6 +75,7 @@
                                   do (push (dump-object obj) result)))))
 
 (defun initialize ()
+  (setf *turn* 1)
   (setf *log* '())
   (setf *game-objects* '())
   (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
@@ -164,6 +168,8 @@
                          do (delete-from-mix obj 'deleted)
                             (removef (aref *pos-cache* (x obj) (y obj)) obj)
                        else collect obj))
+
+           (incf *turn*)
         while (or (plusp (cooldown *player*))))
 
   (dump-state))
