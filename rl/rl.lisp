@@ -55,6 +55,7 @@
   (call-next-method player (concatenate 'list
                                         (list :health (health *player*)
                                               :max-health (max-health *player*)
+                                              :previous-health (previous-health *player*)
                                               :stamina (stamina *player*)
                                               :max-stamina (max-stamina *player*)
                                               :previous-stamina (previous-stamina *player*))
@@ -96,10 +97,11 @@
       (add-object (make-instance 'rat
                                  :x (x pos)
                                  :y (y pos)))))
-  (let ((pos (random-pos)))
-    (add-object (make-instance 'warrior
-                               :x (x pos)
-                               :y (y pos))))
+  (loop repeat 10 do
+    (let ((pos (random-pos)))
+      (add-object (make-instance 'warrior
+                                 :x (x pos)
+                                 :y (y pos)))))
   (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'potion

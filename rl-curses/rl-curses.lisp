@@ -129,8 +129,9 @@
                                     (+ 1 x (length label) (ceiling max 10))
                                     y))))
 
-(defun display-health (health max-health)
-  (display-bar 0 0 "H:" :red health max-health :with-numbers t))
+(defun display-health (health max-health previous-health)
+  (display-bar 0 0 "H:" :red health max-health :with-numbers t
+                                               :previous previous-health))
 
 (defun display-stamina (stamina max-stamina previous-stamina)
   (display-bar 0 1 "S:" :green stamina max-stamina :with-numbers t
@@ -198,7 +199,8 @@
         (clear-screen charms:*standard-window*)
         (display-each objects)
         (display-health (getf player-attributes :health)
-                        (getf player-attributes :max-health))
+                        (getf player-attributes :max-health)
+                        (getf player-attributes :previous-health))
         (display-stamina (getf player-attributes :stamina)
                          (getf player-attributes :max-stamina)
                          (getf player-attributes :previous-stamina))
