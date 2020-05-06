@@ -56,7 +56,8 @@
                                         (list :health (health *player*)
                                               :max-health (max-health *player*)
                                               :stamina (stamina *player*)
-                                              :max-stamina (max-stamina *player*))
+                                              :max-stamina (max-stamina *player*)
+                                              :previous-stamina (previous-stamina *player*))
                                         attributes)))
 
 (defun dump-state ()
@@ -91,11 +92,10 @@
       (add-object (make-instance 'rat
                                  :x (x pos)
                                  :y (y pos)))))
-  (loop repeat 5 do
-    (let ((pos (random-pos)))
-      (add-object (make-instance 'warrior
-                                 :x (x pos)
-                                 :y (y pos)))))
+  (let ((pos (random-pos)))
+    (add-object (make-instance 'warrior
+                               :x (x pos)
+                               :y (y pos))))
   (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'potion
@@ -108,6 +108,7 @@
                                  :y (y pos))))))
 
 (defun tick (action)
+  (delete-from-mix *player* 'running)
   (case action
     ((nil))
     (:move-left (setf (dx *player*) -1))
@@ -163,6 +164,6 @@
                          do (delete-from-mix obj 'deleted)
                             (removef (aref *pos-cache* (x obj) (y obj)) obj)
                        else collect obj))
-        while (or (plusp (cooldown *player*)) (typep *player* 'running)))
+        while (or (plusp (cooldown *player*))))
 
   (dump-state))

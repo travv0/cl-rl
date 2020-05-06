@@ -63,7 +63,7 @@
     (:potion (values #\! :yellow :black t))
     ((:dagger :sword) (values #\) :yellow :black nil))
     (:memory
-     ;; (display (getf attributes :memory-of) t)
+     (display (getf attributes :memory-of) t)
      (return-from get-display-char))
     (t
      #-release (error "~s fell through case expression" name)
@@ -93,8 +93,10 @@
                                         x
                                         y)))))))
 
-(defun display-bar (x y label color current max &key with-numbers)
-  (let ((current (max (min current max) 0)))
+(defun display-bar (x y label color current max
+                    &key with-numbers (previous current) (diff-color :yellow))
+  (let ((current (max (min current max) 0))
+        (diff (max 0 (- previous current))))
     (with-colors ('(:white :black))
       (charms:write-string-at-point charms:*standard-window*
                                     label
@@ -106,12 +108,19 @@
                                                  :initial-element #\=)
                                     (+ x (length label))
                                     y))
+    (with-colors ((list diff-color :black))
+      (charms:write-string-at-point charms:*standard-window*
+                                    (make-string (floor diff 10)
+                                                 :initial-element #\=)
+                                    (+ x (length label) (ceiling current 10))
+                                    y))
     (with-colors ('(:black :black) :bold t)
       (charms:write-string-at-point charms:*standard-window*
                                     (make-string (- (ceiling max 10)
-                                                    (ceiling current 10))
+                                                    (ceiling current 10)
+                                                    (floor diff 10))
                                                  :initial-element #\=)
-                                    (+ x (length label) (ceiling current 10))
+                                    (+ x (length label) (ceiling current 10) (floor diff 10))
                                     y)))
   (when with-numbers
     (with-colors ('(:white :black))
@@ -123,8 +132,9 @@
 (defun display-health (health max-health)
   (display-bar 0 0 "H:" :red health max-health :with-numbers t))
 
-(defun display-stamina (stamina max-stamina)
-  (display-bar 0 1 "S:" :green stamina max-stamina :with-numbers t))
+(defun display-stamina (stamina max-stamina previous-stamina)
+  (display-bar 0 1 "S:" :green stamina max-stamina :with-numbers t
+                                                   :previous previous-stamina))
 
 (defun display-log (rows log)
   (multiple-value-bind (width height)
@@ -187,7 +197,8 @@
       (display-health (getf player-attributes :health)
                       (getf player-attributes :max-health))
       (display-stamina (getf player-attributes :stamina)
-                       (getf player-attributes :max-stamina))
+                       (getf player-attributes :max-stamina)
+                       (getf player-attributes :previous-stamina))
       (display-log 5 log)
       (charms:refresh-window charms:*standard-window*))))
 

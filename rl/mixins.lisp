@@ -38,13 +38,19 @@
     (setf (max-health health) (health health))))
 
 (defclass stamina ()
-  ((%stamina :initarg :stamina :initform 100 :accessor stamina)
+  ((%stamina :initarg :stamina :initform 100 :reader stamina)
    (%max-stamina :initarg :max-stamina :accessor max-stamina)
+   (%previous-stamina :reader previous-stamina :initform 0)
    (%stamina-recharging :accessor stamina-recharging :initform nil)))
 
 (defmethod initialize-instance :after ((stamina stamina) &key)
   (unless (slot-boundp stamina '%max-stamina)
     (setf (max-stamina stamina) (stamina stamina))))
+
+(defmethod (setf stamina) (new-value (stamina stamina))
+  (when (< new-value (stamina stamina))
+    (setf (slot-value stamina '%previous-stamina) (stamina stamina)))
+  (setf (slot-value stamina '%stamina) new-value))
 
 (defclass equip-weapon ()
   ())
@@ -98,20 +104,22 @@
       (loop with collisions = (sort (check-collisions obj) #'< :key (op (distance obj (cdr _))))
             for collision in collisions do
               (destructuring-bind (other-obj . last-pos) collision
-                (when (or (and (typep obj 'solid) (typep other-obj 'solid))
-                          (and other-obj (typep obj 'running) (typep other-obj 'item)))
+                (when (or (and (typep obj 'solid) (typep other-obj 'solid)))
                   (setf dx 0 dy 0)
                   (update-pos obj (x last-pos) (y last-pos)))
-                (unless (typep obj 'running)
-                  (collide other-obj obj))
+                (collide other-obj obj)
                 (when (and (zerop dx) (zerop dy))
                   (delete-from-mix obj 'running)
                   (return))))
+
       (unless (and (zerop dx) (zerop dy))
         (let ((move-cooldown (if (typep obj 'running)
-                                 (round (* move-cooldown 2/3))
+                                 (round (* move-cooldown (if (< (stamina obj) *running-stamina*)
+                                                             2
+                                                             2/3)))
                                  move-cooldown)))
           (incf cooldown move-cooldown))))
+
     (update-pos obj (+ x (round dx)) (+ y (round dy)))
 
     (when (and (typep obj 'stamina) (typep obj 'running))
@@ -119,13 +127,8 @@
              (delete-from-mix obj 'running))
             (t (decf (stamina obj) *running-stamina*))))
 
-    (when (and (typep obj 'running)
-               (wall-different-p obj (- x (round dx)) (- y (round dy))))
-      (setf dx 0 dy 0)
-      (delete-from-mix obj 'running))
-    (unless (typep obj 'running)
-      (setf dx (- dx (* dx friction))
-            dy (- dy (* dy friction))))))
+    (setf dx (- dx (* dx friction))
+          dy (- dy (* dy friction)))))
 
 (defmethod update :around ((obj stamina))
   (let ((start-stamina (stamina obj)))
