@@ -3,6 +3,10 @@
 (defclass cooldown ()
   ((%cooldown :initform 0 :accessor cooldown)))
 
+(defclass attacking ()
+  ((%current-windup :initform 0 :accessor current-windup)
+   (%attacking-pos :accessor attacking-pos)))
+
 (defclass moveable (pos cooldown)
   ((%dx :initarg :dx :initform 0 :accessor dx)
    (%dy :initarg :dy :initform 0 :accessor dy)
@@ -155,6 +159,14 @@
 
 (defun cooling-down-p (obj)
   (and (typep obj 'cooldown) (plusp (cooldown obj))))
+
+(defun attacking-p (obj)
+  (typep obj 'attacking))
+
+(defmethod progress-attack ((obj attacking))
+  (if (plusp (current-windup obj))
+      (decf (current-windup obj))
+      (attack (get-object-at-pos (attacking-pos obj)) obj)))
 
 (defun get-modifiers (obj)
   (remove-if (op (or (typep _1 'mixin-class)

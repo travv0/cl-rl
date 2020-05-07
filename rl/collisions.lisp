@@ -19,8 +19,25 @@
 (defparameter *unarmed-damage* 2)
 (defparameter *unarmed-stamina* 10)
 (defparameter *unarmed-cooldown* 2)
+(defparameter *unarmed-windup* 1)
 
 (defmethod collide :before ((obj health) (arm right-arm))
+  (write-to-log "~a ~:[is preparing~;raised their weapon~] to attack"
+                (display-name arm)
+                (equip-right-arm arm))
+  (ensure-mix arm 'attacking)
+  (setf (current-windup arm) (if (equip-right-arm arm)
+                                 (weapon-windup (equip-right-arm arm))
+                                 *unarmed-windup*))
+  (setf (attacking-pos arm) (pos (x obj) (y obj))))
+
+(defmethod attack :after (obj (arm attacking))
+  (delete-from-mix arm 'attacking))
+
+(defmethod attack (obj (arm right-arm))
+  (write-to-log "~a hit only air!" (display-name arm)))
+
+(defmethod attack ((obj health) (arm right-arm))
   (let ((damage (calculate-damage (equip-right-arm arm) (resistances obj)))
         (stamina-use (if (equip-right-arm arm)
                          (stamina-use (equip-right-arm arm))

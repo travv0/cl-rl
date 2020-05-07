@@ -157,11 +157,12 @@
   (loop do (when (not (plusp (health *player*)))
              (initialize))
 
-           (unless (cooling-down-p *player*)
+           (unless (or (cooling-down-p *player*) (attacking-p *player*))
              (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
 
            (dolist (obj *game-objects*)
-             (cond ((cooling-down-p obj) (cool-down obj))
+             (cond ((attacking-p obj) (progress-attack obj))
+                   ((cooling-down-p obj) (cool-down obj))
                    (t (update obj))))
 
            (setf *game-objects*
@@ -172,6 +173,6 @@
                        else collect obj))
 
            (incf *turn*)
-        while (or (plusp (cooldown *player*))))
+        while (or (plusp (cooldown *player*)) (typep *player* 'attacking)))
 
   (dump-state))
