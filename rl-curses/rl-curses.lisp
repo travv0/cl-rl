@@ -64,6 +64,7 @@
       (:warrior (hostile #\w :red nil))
       (:potion (values #\! :yellow :black t))
       ((:dagger :sword) (values #\) :yellow :black nil))
+      (:kite-shield (values #\] :yellow :black nil))
       (:memory
        (display (getf attributes :memory-of) t)
        (return-from get-display-char))

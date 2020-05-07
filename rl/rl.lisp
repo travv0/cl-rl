@@ -116,6 +116,11 @@
     (let ((pos (random-pos)))
       (add-object (make-instance 'sword
                                  :x (x pos)
+                                 :y (y pos)))))
+  (loop repeat 50 do
+    (let ((pos (random-pos)))
+      (add-object (make-instance 'kite-shield
+                                 :x (x pos)
                                  :y (y pos))))))
 
 (defun tick (action)
