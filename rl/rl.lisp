@@ -91,7 +91,6 @@
   (init-floor *stage-width* *stage-height*)
   (let ((pos (random-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
-  (add-object *player*)
   (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
@@ -168,13 +167,14 @@
   (loop do (when (not (plusp (health *player*)))
              (initialize))
 
-           (unless (or (cooling-down-p *player*) (attacking-p *player*))
-             (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
+           (let ((*game-objects* (cons *player* *game-objects*)))
+             (unless (or (cooling-down-p *player*) (attacking-p *player*))
+               (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
 
-           (dolist (obj *game-objects*)
-             (cond ((attacking-p obj) (progress-attack obj))
-                   ((cooling-down-p obj) (cool-down obj))
-                   (t (update obj))))
+             (dolist (obj *game-objects*)
+               (cond ((attacking-p obj) (progress-attack obj))
+                     ((cooling-down-p obj) (cool-down obj))
+                     (t (update obj)))))
 
            (setf *game-objects*
                  (loop for obj in *game-objects*

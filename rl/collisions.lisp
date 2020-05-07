@@ -52,11 +52,6 @@
          (stamina-use (if (equip-right-arm arm)
                           (stamina-use (equip-right-arm arm))
                           *unarmed-stamina*)))
-    (when (typep arm 'cooldown)
-      (incf (cooldown arm) (if (equip-right-arm arm)
-                               (weapon-cooldown (equip-right-arm arm))
-                               *unarmed-cooldown*)))
-
     (when (typep obj 'blocking)
       (decf (stamina obj)
             (ceiling (* 2 (- stamina-use
@@ -67,6 +62,16 @@
         (delete-from-mix obj 'blocking)
         (write-to-log "~a was too exhausted to block ~a's attack and lowered their shield"
                       (display-name obj) (display-name arm))))
+
+    (when (typep arm 'cooldown)
+      (let ((cooldown (if (equip-right-arm arm)
+                          (weapon-cooldown (equip-right-arm arm))
+                          *unarmed-cooldown*)))
+        (cond ((typep obj 'blocking)
+               (incf (cooldown arm) (* 2 cooldown))
+               (write-to-log "~a's attacked was deflected by ~a's shield, buying ~:*~a some extra time"
+                             (display-name arm) (display-name obj)))
+              (t (incf (cooldown arm) cooldown)))))
 
     (write-to-log "~a attacked ~a for ~d damage"
                   (display-name arm)
