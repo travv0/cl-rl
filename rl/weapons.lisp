@@ -31,5 +31,5 @@
 (defclass kite-shield (shield)
   ((%damage :initform 15)
    (%weapon-cooldown :initform 5)
-   (%damage-reduction :initform .95)
-   (%stability :initform 10)))
+   (%damage-reduction :initform 0.95)
+   (%stability :initform 0.5)))
