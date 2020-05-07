@@ -14,6 +14,7 @@
  (run-up-right #\U)
  (run-down-left #\B)
  (run-down-right #\N)
- (reveal-map #\s)
+ (toggle-shield #\s)
+ (reveal-map #\R)
  (reset #\r)
  (quit #\Esc))

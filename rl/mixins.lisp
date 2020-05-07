@@ -71,6 +71,9 @@
 (defclass left-arm (equip-weapon)
   ((%equip-left-arm :initarg :equip-left-arm :initform nil :accessor equip-left-arm)))
 
+(defclass blocking ()
+  ())
+
 (defclass damage ()
   ((%damage :initarg :damage :initform (error "damage must be set") :accessor damage)))
 
@@ -147,7 +150,7 @@
 (defmethod update :around ((obj stamina))
   (let ((start-stamina (stamina obj)))
     (call-next-method)
-    (unless (< (stamina obj) start-stamina)
+    (unless (or (< (stamina obj) start-stamina) (typep obj 'blocking))
       (let ((increase (if (and (typep obj 'cooldown) (not (zerop (cooldown obj))))
                           (cooldown obj)
                           1)))
@@ -173,3 +176,16 @@
                      (eq _1 (find-class 'modifier))
                      (not (c2mop:subtypep _1 (find-class 'modifier)))))
              (c2mop:class-precedence-list (class-of obj))))
+
+(defmethod toggle-shield ((obj left-arm))
+  (cond ((typep obj 'blocking)
+         (write-to-log "~a lowered ~a"
+                       (display-name obj)
+                       (display-name (equip-left-arm obj)))
+         (delete-from-mix obj 'blocking))
+        ((equip-left-arm obj)
+         (write-to-log "~a raised ~a"
+                       (display-name obj)
+                       (display-name (equip-left-arm obj)))
+         (ensure-mix obj 'blocking))
+        (t (write-to-log "~a doesn't have a shield equipped" (display-name obj)))))

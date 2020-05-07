@@ -159,6 +159,7 @@
     (:run-down-right
      (ensure-mix *player* 'running)
      (setf (dx *player*) 1 (dy *player*) 1))
+    (:toggle-shield (toggle-shield *player*))
     (:reveal-map (mapc #'replace-memory (reverse *game-objects*)))
     (:reset (initialize))
     (:quit (error 'quit-condition))
