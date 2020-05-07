@@ -51,6 +51,11 @@
                                         (list :memory-of (memory-of memory))
                                         attributes)))
 
+(defmethod dump-object ((obj attacking) &optional attributes)
+  (call-next-method obj (concatenate 'list
+                                     (list :attacking t)
+                                     attributes)))
+
 (defmethod dump-object ((player player) &optional attributes)
   (call-next-method player (concatenate 'list
                                         (list :health (health *player*)
