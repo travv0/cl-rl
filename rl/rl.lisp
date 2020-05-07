@@ -116,7 +116,7 @@
       (add-object (make-instance 'sword
                                  :x (x pos)
                                  :y (y pos)))))
-  (loop repeat 50 do
+  (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'kite-shield
                                  :x (x pos)
@@ -174,7 +174,7 @@
              (dolist (obj *game-objects*)
                (cond ((attacking-p obj) (progress-attack obj))
                      ((cooling-down-p obj) (cool-down obj))
-                     (t (update obj)))))
+                     ((not (typep obj 'deleted)) (update obj)))))
 
            (setf *game-objects*
                  (loop for obj in *game-objects*
