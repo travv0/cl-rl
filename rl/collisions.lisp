@@ -41,6 +41,21 @@
 (defmethod attack :after (obj (arm attacking))
   (delete-from-mix arm 'attacking))
 
+(defmethod attack :after (obj (arm right-arm))
+  (let ((stamina-use (if (equip-right-arm arm)
+                         (stamina-use (equip-right-arm arm))
+                         *unarmed-stamina*)))
+    (when (typep arm 'cooldown)
+      (let ((cooldown (if (equip-right-arm arm)
+                          (weapon-cooldown (equip-right-arm arm))
+                          *unarmed-cooldown*)))
+        (cond ((typep obj 'blocking)
+               (incf (cooldown arm) (* 2 cooldown))
+               (write-to-log "~a's attacked was deflected by ~a's shield"
+                             (display-name arm) (display-name obj)))
+              (t (incf (cooldown arm) cooldown)))))
+    (decf (stamina arm) stamina-use)))
+
 (defmethod attack (obj (arm right-arm))
   (write-to-log "~a hit only air!" (display-name arm)))
 
@@ -63,22 +78,11 @@
         (write-to-log "~a was too exhausted to block ~a's attack and lowered their shield"
                       (display-name obj) (display-name arm))))
 
-    (when (typep arm 'cooldown)
-      (let ((cooldown (if (equip-right-arm arm)
-                          (weapon-cooldown (equip-right-arm arm))
-                          *unarmed-cooldown*)))
-        (cond ((typep obj 'blocking)
-               (incf (cooldown arm) (* 2 cooldown))
-               (write-to-log "~a's attacked was deflected by ~a's shield, buying ~:*~a some extra time"
-                             (display-name arm) (display-name obj)))
-              (t (incf (cooldown arm) cooldown)))))
-
     (write-to-log "~a attacked ~a for ~d damage"
                   (display-name arm)
                   (display-name obj)
                   damage)
     (decf (health obj) damage)
-    (decf (stamina arm) stamina-use)
     (when (not (plusp (health obj)))
       (write-to-log "~a was defeated" (display-name obj))
       (ensure-mix obj 'deleted))))
