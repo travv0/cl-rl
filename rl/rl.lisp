@@ -172,9 +172,10 @@
                (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
 
              (dolist (obj *game-objects*)
-               (cond ((attacking-p obj) (progress-attack obj))
-                     ((cooling-down-p obj) (cool-down obj))
-                     ((not (typep obj 'deleted)) (update obj)))))
+               (unless (typep obj 'deleted)
+                 (cond ((attacking-p obj) (progress-attack obj))
+                       ((cooling-down-p obj) (cool-down obj))
+                       (t (update obj))))))
 
            (setf *game-objects*
                  (loop for obj in *game-objects*
