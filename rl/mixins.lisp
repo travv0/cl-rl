@@ -32,36 +32,6 @@
                        :initform 1.2
                        :accessor resistance-amount)))
 
-(defclass health ()
-  ((%health :initarg :health :initform 100 :reader health)
-   (%max-health :initarg :max-health :accessor max-health)
-   (%previous-health :accessor previous-health :initform 0)
-   (%resistances :initform '() :initarg :resistances :accessor resistances)))
-
-(defmethod initialize-instance :after ((health health) &key)
-  (unless (slot-boundp health '%max-health)
-    (setf (max-health health) (health health))))
-
-(defmethod (setf health) (new-value (health health))
-  (when (< new-value (health health))
-    (setf (slot-value health '%previous-health) (health health)))
-  (setf (slot-value health '%health) new-value))
-
-(defclass stamina ()
-  ((%stamina :initarg :stamina :initform 100 :reader stamina)
-   (%max-stamina :initarg :max-stamina :accessor max-stamina)
-   (%previous-stamina :accessor previous-stamina :initform 0)
-   (%stamina-recharging :accessor stamina-recharging :initform nil)))
-
-(defmethod initialize-instance :after ((stamina stamina) &key)
-  (unless (slot-boundp stamina '%max-stamina)
-    (setf (max-stamina stamina) (stamina stamina))))
-
-(defmethod (setf stamina) (new-value (stamina stamina))
-  (when (< new-value (stamina stamina))
-    (setf (previous-stamina stamina) (stamina stamina)))
-  (setf (slot-value stamina '%stamina) new-value))
-
 (defclass equip-weapon ()
   ())
 
@@ -97,6 +67,47 @@
 
 (defclass opaque ()
   ())
+
+(defclass alive (moveable)
+  ((%vitality :initform (error "vitality must be set") :accessor vitality)
+   (%strength :initform (error "strength must be set") :accessor strength)
+   (%dexterity :initform (error "dexterity must be set") :accessor dexterity)
+   (%endurance :initform (error "endurance must be set") :accessor endurance)
+
+   (%strength-damage :reader strength-damage)
+   (%dexterity-damage :reader dexterity-damage)
+
+   (%stamina :reader stamina)
+   (%max-stamina :reader max-stamina)
+   (%previous-stamina :accessor previous-stamina :initform 0)
+   (%stamina-recharging :accessor stamina-recharging :initform nil)
+
+   (%health :reader health)
+   (%max-health :reader max-health)
+   (%previous-health :accessor previous-health :initform 0)
+   (%resistances :initform '() :initarg :resistances :accessor resistances)))
+
+(defmethod calculate-max-health ((obj alive))
+  (round (+ 90 (* 100 (/ (vitality obj) 50)))))
+
+(defmethod calculate-max-stamina ((obj alive))
+  (round (+ 90 (* 100 (/ (endurance obj) 50)))))
+
+(defmethod initialize-instance :after ((obj alive) &key)
+  (setf (slot-value obj '%max-health) (calculate-max-health obj)
+        (slot-value obj '%max-stamina) (calculate-max-stamina obj)
+        (slot-value obj '%health) (max-health obj)
+        (slot-value obj '%stamina) (max-stamina obj)))
+
+(defmethod (setf health) (new-value (obj alive))
+  (when (< new-value (health obj))
+    (setf (slot-value obj '%previous-health) (health obj)))
+  (setf (slot-value obj '%health) new-value))
+
+(defmethod (setf stamina) (new-value (obj alive))
+  (when (< new-value (stamina obj))
+    (setf (previous-stamina obj) (stamina obj)))
+  (setf (slot-value obj '%stamina) new-value))
 
 (defclass humanoid (inventory right-arm left-arm)
   ())
@@ -150,7 +161,7 @@
   (when (> (previous-health obj) (health obj))
     (decf (previous-health obj))))
 
-(defmethod update :around ((obj stamina))
+(defmethod update :around ((obj alive))
   (let ((start-stamina (stamina obj)))
     (call-next-method)
     (unless (or (< (stamina obj) start-stamina) (typep obj 'blocking))

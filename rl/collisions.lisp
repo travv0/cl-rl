@@ -17,12 +17,12 @@
       (push obj (inventory moving-obj)))
   (ensure-mix obj 'deleted))
 
-(defparameter *unarmed-damage* 2)
+(defparameter *unarmed-damage* 10)
 (defparameter *unarmed-stamina* 10)
 (defparameter *unarmed-cooldown* 2)
 (defparameter *unarmed-windup* 1)
 
-(defmethod collide :before ((obj health) (arm right-arm))
+(defmethod collide :before ((obj alive) (arm right-arm))
   (cond ((typep arm 'blocking) (write-to-log "~a could not attack - shield is raised"
                                              (display-name arm)))
         ((>= (stamina arm) (if (equip-right-arm arm)
@@ -60,8 +60,8 @@
 (defmethod attack (obj (arm right-arm))
   (write-to-log "~a hit only air!" (display-name arm)))
 
-(defmethod attack ((obj health) (arm right-arm))
-  (let* ((raw-damage (calculate-damage (equip-right-arm arm) (resistances obj)))
+(defmethod attack ((obj alive) (arm right-arm))
+  (let* ((raw-damage (calculate-damage (equip-right-arm arm) arm (resistances obj)))
          (damage (if (typep obj 'blocking)
                      (ceiling (- raw-damage (* raw-damage (damage-reduction (equip-left-arm obj)))))
                      raw-damage))
@@ -88,12 +88,14 @@
       (write-to-log "~a was defeated" (display-name obj))
       (ensure-mix obj 'deleted))))
 
-(defmethod calculate-damage (weapon &optional resistances)
+(defmethod calculate-damage (weapon strength-stat &optional resistances)
   (declare (ignore resistances))
   (ceiling (* (+ 0.8 (random 0.4)) *unarmed-damage*)))
 
-(defmethod calculate-damage ((weapon weapon) &optional resistances)
-  (let ((damage (damage weapon)))
+(defmethod calculate-damage ((weapon weapon) (attacker alive) &optional resistances)
+  (let ((damage (* (1+ (* (/ (strength attacker) 50) (weapon-strength-scale weapon)))
+                   (1+ (* (/ (dexterity attacker) 50) (weapon-dexterity-scale weapon)))
+                   (damage weapon))))
     (dolist (modifier (get-modifiers weapon))
       (let ((modifier-damage 1.2))
         (when-let ((resistance (find modifier resistances :key 'resistance-to)))

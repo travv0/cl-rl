@@ -3,10 +3,13 @@
 (defvar *player*)
 (defun player () *player*)
 
-(defclass player (moveable visible solid can-see health stamina humanoid)
-  ((%health :initform 100)
-   (%stamina :initform 100)
-   (%equip-left-arm :initform (make-instance 'kite-shield))))
+(defclass player (alive visible solid can-see humanoid)
+  ((%equip-right-arm :initform (make-instance 'sword))
+   (%equip-left-arm :initform (make-instance 'kite-shield))
+   (%strength :initform 10)
+   (%dexterity :initform 5)
+   (%endurance :initform 5)
+   (%vitality :initform 5)))
 
 (defmethod update ((player player))
   (loop for y below (array-dimension *pos-cache* 1) do
