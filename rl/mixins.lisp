@@ -149,7 +149,7 @@
 
     (update-pos obj (+ x (round dx)) (+ y (round dy)))
 
-    (when (and (typep obj 'stamina) (typep obj 'running))
+    (when (and (typep obj 'alive) (typep obj 'running))
       (cond ((< (stamina obj) *running-stamina*)
              (delete-from-mix obj 'running))
             (t (decf (stamina obj) *running-stamina*))))
@@ -157,7 +157,7 @@
     (setf dx (- dx (* dx friction))
           dy (- dy (* dy friction)))))
 
-(defmethod update :after ((obj health))
+(defmethod update :after ((obj alive))
   (when (> (previous-health obj) (health obj))
     (decf (previous-health obj))))
 

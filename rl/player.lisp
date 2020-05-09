@@ -6,7 +6,7 @@
 (defclass player (alive visible solid can-see humanoid)
   ((%equip-right-arm :initform (make-instance 'sword))
    (%equip-left-arm :initform (make-instance 'kite-shield))
-   (%strength :initform 10)
+   (%strength :initform 5)
    (%dexterity :initform 5)
    (%endurance :initform 5)
    (%vitality :initform 5)))
