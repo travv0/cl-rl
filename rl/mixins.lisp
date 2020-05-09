@@ -120,7 +120,7 @@
 
 (defparameter *running-stamina* 3)
 
-(defmethod update :before ((obj moveable))
+(defmethod update :after ((obj moveable))
   (with-accessors ((x x) (y y)
                    (dx dx) (dy dy)
                    (friction friction)
@@ -159,7 +159,7 @@
 
 (defmethod update :after ((obj alive))
   (when (> (previous-health obj) (health obj))
-    (decf (previous-health obj))))
+    (decf (previous-health obj) 5)))
 
 (defmethod update :around ((obj alive))
   (let ((start-stamina (stamina obj)))

@@ -11,7 +11,7 @@
    (%endurance :initform 5)
    (%vitality :initform 5)))
 
-(defmethod update ((player player))
+(defmethod update :after ((player player))
   (loop for y below (array-dimension *pos-cache* 1) do
     (loop for x below (array-dimension *pos-cache* 0) do
       (when (or (zerop x)
@@ -29,9 +29,7 @@
                      (unless (or (eq obj player) (typep obj 'moveable))
                        (replace-memory obj)))
                    (when hit-opaque
-                     (return-from pos-loop))))))))
-
-(defmethod update :after ((player player))
+                     (return-from pos-loop)))))))
   (with-accessors ((x x) (y y)) player
     (flet ((visible-pos (check-x check-y)
              (and (not (typep (get-object-at-pos (pos check-x check-y)) 'opaque))
