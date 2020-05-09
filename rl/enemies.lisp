@@ -29,7 +29,7 @@
   (print-unreadable-object (enemy stream :type t :identity t)
     (format stream "(~d, ~d) ~s" (x enemy) (y enemy) (enemy-state enemy))))
 
-(defmethod update :before ((enemy enemy))
+(defmethod update ((enemy enemy))
   (ccase (enemy-state enemy)
     (:chasing (if (and (zerop (random 10))
                        (not (can-see-p enemy *player*)))

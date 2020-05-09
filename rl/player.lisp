@@ -26,8 +26,7 @@
                      (unless (or (eq obj player) (typep obj 'moveable))
                        (replace-memory obj)))
                    (when hit-opaque
-                     (return-from pos-loop)))))))
-  (call-next-method))
+                     (return-from pos-loop))))))))
 
 (defmethod update :after ((player player))
   (with-accessors ((x x) (y y)) player

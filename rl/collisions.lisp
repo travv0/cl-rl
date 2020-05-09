@@ -2,12 +2,12 @@
 
 (defmethod collide ((obj pos) (moving-obj moveable)))
 
-(defmethod collide :before ((door door) (moving-obj cooldown))
+(defmethod collide ((door door) (moving-obj cooldown))
   (when (typep door 'solid)
     (incf (cooldown moving-obj) 3)
     (delete-from-mix door 'opaque 'solid)))
 
-(defmethod collide :before ((obj item) (moving-obj inventory))
+(defmethod collide ((obj item) (moving-obj inventory))
   (write-to-log "picked up ~:[something~;a~@[n~] ~0@*~a~]"
                 (display-name obj)
                 (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u)))
