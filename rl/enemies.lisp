@@ -10,7 +10,7 @@
                   :accessor wandering-to)
    (%view-distance :initform 30 :initarg :view-distance :accessor view-distance)))
 
-(defclass goblin (enemy right-arm)
+(defclass goblin (enemy humanoid)
   ((%health :initform 40)
    (%stamina :initform 40)
    (%resistances :initform (list (make-resistance 'fire 0.8)))))
@@ -18,11 +18,11 @@
 (defclass goblin-fighter (goblin)
   ((%equip-right-arm :initform (make-instance 'dagger))))
 
-(defclass warrior (enemy right-arm)
+(defclass warrior (enemy humanoid)
   ((%health :initform 50)
    (%equip-right-arm :initform (make-instance 'sword))))
 
-(defclass rat (enemy right-arm)
+(defclass rat (enemy)
   ((%health :initform 20)))
 
 (defmethod print-object ((enemy enemy) stream)

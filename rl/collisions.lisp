@@ -8,7 +8,8 @@
     (delete-from-mix door 'opaque 'solid)))
 
 (defmethod collide ((obj item) (moving-obj inventory))
-  (write-to-log "picked up ~:[something~;a~@[n~] ~0@*~a~]"
+  (write-to-log "~a picked up ~:[something~;a~@[n~] ~1@*~a~]"
+                (display-name moving-obj)
                 (display-name obj)
                 (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u)))
   (if (typep obj 'weapon)

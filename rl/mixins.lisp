@@ -98,6 +98,9 @@
 (defclass opaque ()
   ())
 
+(defclass humanoid (inventory right-arm left-arm)
+  ())
+
 (defun make-resistance (type &optional amount)
   (let ((resistance (make-instance 'resistance :resistance-to (find-class type))))
     (when amount

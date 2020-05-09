@@ -3,7 +3,7 @@
 (defvar *player*)
 (defun player () *player*)
 
-(defclass player (moveable visible solid inventory can-see health stamina right-arm left-arm)
+(defclass player (moveable visible solid can-see health stamina humanoid)
   ((%health :initform 100)
    (%stamina :initform 100)
    (%equip-left-arm :initform (make-instance 'kite-shield))))
