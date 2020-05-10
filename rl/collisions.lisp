@@ -57,6 +57,13 @@
               (t (incf (cooldown arm) cooldown)))))
     (decf (stamina arm) stamina-use)))
 
+(defmethod attack :after ((obj cooldown) (arm right-arm))
+  (unless (typep obj 'blocking)
+    (let ((weapon (equip-right-arm arm)))
+      (incf (cooldown obj) (if weapon
+                               (weapon-cooldown weapon)
+                               *unarmed-cooldown*)))))
+
 (defmethod attack (obj (arm right-arm))
   (write-to-log "~a hit only air!" (display-name arm)))
 

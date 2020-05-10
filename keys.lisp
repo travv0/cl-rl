@@ -17,4 +17,7 @@
  (toggle-shield #\s)
  (reveal-map #\R)
  (reset #\r)
- (quit #\Esc))
+ (quit #\Esc)
+
+ (apply-a #\a))
+

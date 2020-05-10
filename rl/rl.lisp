@@ -108,11 +108,6 @@
                                  :y (y pos)))))
   (loop repeat 5 do
     (let ((pos (random-pos)))
-      (add-object (make-instance 'potion
-                                 :x (x pos)
-                                 :y (y pos)))))
-  (loop repeat 5 do
-    (let ((pos (random-pos)))
       (add-object (make-instance 'sword
                                  :x (x pos)
                                  :y (y pos)))))
@@ -162,6 +157,8 @@
     (:reveal-map (mapc #'replace-memory (reverse *game-objects*)))
     (:reset (initialize))
     (:quit (error 'quit-condition))
+
+    (:apply-a (apply-item (first (inventory *player*)) *player*))
     (t (format t "Unknown key: ~a (~d)~%" (code-char action) action)))
 
   (loop do (when (not (plusp (health *player*)))

@@ -32,13 +32,10 @@
                        :initform 1.2
                        :accessor resistance-amount)))
 
-(defclass equip-weapon ()
-  ())
-
-(defclass right-arm (equip-weapon)
+(defclass right-arm ()
   ((%equip-right-arm :initarg :equip-right-arm :initform nil :accessor equip-right-arm)))
 
-(defclass left-arm (equip-weapon)
+(defclass left-arm ()
   ((%equip-left-arm :initarg :equip-left-arm :initform nil :accessor equip-left-arm)))
 
 (defclass blocking ()
@@ -102,12 +99,12 @@
 (defmethod (setf health) (new-value (obj alive))
   (when (< new-value (health obj))
     (setf (slot-value obj '%previous-health) (health obj)))
-  (setf (slot-value obj '%health) new-value))
+  (setf (slot-value obj '%health) (min (max-health obj) new-value)))
 
 (defmethod (setf stamina) (new-value (obj alive))
   (when (< new-value (stamina obj))
     (setf (previous-stamina obj) (stamina obj)))
-  (setf (slot-value obj '%stamina) new-value))
+  (setf (slot-value obj '%stamina) (min (max-stamina obj) new-value)))
 
 (defclass humanoid (inventory right-arm left-arm)
   ())
