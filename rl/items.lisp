@@ -17,9 +17,11 @@
    (%max-charges :initform 5)))
 
 (defmethod apply-item :around ((item rechargeable) obj)
-  (when (plusp (current-charges item))
-    (call-next-method)
-    (decf (current-charges item))))
+  (cond ((plusp (current-charges item))
+         (call-next-method)
+         (decf (current-charges item)))
+        (t (write-to-log "could not apply ~a - out of charges"
+                         (display-name item)))))
 
 (defmethod apply-item ((potion health-potion) (obj alive))
   (incf (health obj) (regeneration-amount potion)))
