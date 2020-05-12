@@ -7,14 +7,19 @@
     (incf (cooldown moving-obj) 3)
     (delete-from-mix door 'opaque 'solid)))
 
-(defmethod collide ((obj item) (moving-obj inventory))
+(defmethod collide :before ((obj item) (moving-obj inventory))
   (write-to-log "~a picked up ~:[something~;a~@[n~] ~1@*~a~]"
                 (display-name moving-obj)
                 (display-name obj)
-                (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u)))
-  (if (typep obj 'weapon)
-      (setf (equip-right-arm moving-obj) obj)
-      (push obj (inventory moving-obj)))
+                (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u))))
+
+(defmethod collide ((obj item) (moving-obj inventory))
+  (push obj (inventory moving-obj)))
+
+(defmethod collide ((weapon weapon) (moving-obj right-arm))
+  (setf (equip-right-arm moving-obj) weapon))
+
+(defmethod collide :after ((obj item) (moving-obj inventory))
   (ensure-mix obj 'deleted))
 
 (defparameter *unarmed-damage* 10)
@@ -56,6 +61,8 @@
                              (display-name arm) (display-name obj)))
               (t (incf (cooldown arm) cooldown)))))
     (decf (stamina arm) stamina-use)))
+
+(defmethod attack :after (obj (cooldown cooldown))
 
 (defmethod attack :after ((obj cooldown) (arm right-arm))
   (unless (typep obj 'blocking)
