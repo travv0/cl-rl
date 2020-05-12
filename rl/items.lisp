@@ -16,12 +16,10 @@
   ((%regeneration-amount :initform 40 :reader regeneration-amount)
    (%max-charges :initform 5)))
 
-(defmethod apply-item :before ((item rechargeable) obj)
-  (unless (plusp (current-charges item))
-    (return-from apply-item)))
+(defmethod apply-item :around ((item rechargeable) obj)
+  (when (plusp (current-charges item))
+    (call-next-method)
+    (decf (current-charges item))))
 
 (defmethod apply-item ((potion health-potion) (obj alive))
   (incf (health obj) (regeneration-amount potion)))
-
-(defmethod apply-item :after ((item rechargeable) obj)
-  (decf (current-charges item)))
