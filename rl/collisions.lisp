@@ -7,17 +7,17 @@
     (incf (cooldown moving-obj) 3)
     (delete-from-mix door 'opaque 'solid)))
 
-(defmethod collide :before ((obj item) (moving-obj inventory))
+(defmethod pick-up :before ((obj item) (moving-obj inventory))
   (write-to-log "~a picked up ~:[something~;a~@[n~] ~1@*~a~]"
                 (display-name moving-obj)
                 (display-name obj)
                 (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u))))
 
-(defmethod collide ((obj item) (moving-obj inventory))
-  (push obj (inventory moving-obj)))
+(defmethod pick-up ((obj item) (moving-obj inventory))
+  (vector-push-extend obj (inventory moving-obj)))
 
-(defmethod collide ((weapon weapon) (moving-obj right-arm))
-  (setf (equip-right-arm moving-obj) weapon))
+(defmethod collide ((obj item) (moving-obj inventory))
+  (pick-up obj moving-obj))
 
 (defmethod collide :after ((obj item) (moving-obj inventory))
   (ensure-mix obj 'deleted))

@@ -90,7 +90,7 @@
                                    when obj
                                      do (push (dump-object obj) result)))))
     (:inventory
-     (list :inventory (mapcar #'dump-object (inventory *player*))))))
+     (list :inventory (map 'vector #'dump-object (inventory *player*))))))
 
 (defun initialize ()
   (setf *turn* 1)

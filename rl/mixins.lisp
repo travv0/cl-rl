@@ -22,7 +22,12 @@
 (defclass solid () ())
 
 (defclass inventory ()
-  ((%inventory :initarg :inventory :initform '() :accessor inventory)))
+  ((%inventory :initarg :inventory
+               :initform (make-array '(0)
+                                     :element-type 'visible
+                                     :adjustable t
+                                     :fill-pointer t)
+               :accessor inventory)))
 
 (defclass resistance ()
   ((%resistance-to :initarg :resistance-to

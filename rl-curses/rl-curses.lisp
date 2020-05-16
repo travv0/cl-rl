@@ -23,7 +23,7 @@
 
 (defun define-color-pair (pair foreground background)
   (progn (charms/ll:init-pair pair (color-from-keyword foreground) (color-from-keyword background))
-          (charms/ll:color-pair pair)))
+         (charms/ll:color-pair pair)))
 
 (defparameter *color-pairs* (serapeum:dict))
 (defparameter *color-pair-counter* 0)
@@ -202,6 +202,8 @@
       data
     (let ((*player-x* (getf player :x))
           (*player-y* (getf player :y)))
+      (charms:clear-window charms:*standard-window* :force-repaint t)
+      (clear-screen charms:*standard-window*)
       (display-each objects)
       (display-health (getf player-attributes :health)
                       (getf player-attributes :max-health)
@@ -218,7 +220,8 @@
 
 (defun draw-inventory (data width height)
   (declare (ignorable width height))
-  (loop for item in (getf data :inventory)
+  (charms:clear-window charms:*standard-window* :force-repaint t)
+  (loop for item across (getf data :inventory)
         for i from 0
         do (destructuring-bind (&key
                                   ((:attributes (&key charges max-charges)))
@@ -234,8 +237,6 @@
                                            i))))
 
 (defun update-and-display (char)
-  (charms:clear-window charms:*standard-window* :force-repaint t)
-
   (multiple-value-bind (width height)
       (charms:window-dimensions charms:*standard-window*)
     (destructuring-bind (state data) (rl:tick (char-to-action char))
