@@ -82,9 +82,9 @@
 (defvar *player-y*)
 
 (defun draw (x y char foreground-color background-color bold &optional memory-p)
-  (let ((foreground-color (if memory-p :blue foreground-color))
+  (let ((foreground-color (if memory-p :black foreground-color))
         (background-color (if memory-p :black background-color))
-        (bold (if memory-p nil bold)))
+        (bold (if memory-p t bold)))
     (multiple-value-bind (width height)
         (charms:window-dimensions charms:*standard-window*)
       (let ((x (+ (- x *player-x*) (floor width 2)))
@@ -152,9 +152,12 @@
 
 (defvar *key-action-map* (make-hash-table))
 
+(defvar *state* :play)
+
 (defun char-to-action (char)
-  (or (gethash char *key-action-map*)
-      (gethash (code-char char) *key-action-map*)))
+  (and char
+       (or (@ *key-action-map* *state* char)
+           (@ *key-action-map* *state* (code-char char)))))
 
 (defun map-keys (input)
   (let ((key-action-map (make-hash-table)))
@@ -163,13 +166,16 @@
                  (symbol-value (find-symbol (concatenate 'string "KEY_" (symbol-name key))
                                             :charms/ll))
                  key)))
-      (loop for (action keys) in input
-            do (if (listp keys)
-                   (loop for key in keys
-                         do (setf (gethash (true-key key) key-action-map)
-                                  (make-keyword action)))
-                   (setf (gethash (true-key keys) key-action-map)
-                         (make-keyword action)))))
+      (loop for (state input) on input by #'cddr do
+        (loop for (action keys) in input
+              do (unless (gethash state key-action-map)
+                   (setf (gethash state key-action-map) (make-hash-table)))
+                 (if (listp keys)
+                     (loop for key in keys
+                           do (setf (@ key-action-map state (true-key key))
+                                    (make-keyword action)))
+                     (setf (@ key-action-map state (true-key keys))
+                           (make-keyword action))))))
     key-action-map))
 
 (defun load-keys (&optional (file-name "keys.lisp"))
@@ -187,50 +193,78 @@
       (loop for x below width do
         (draw x y #\Space :black :black nil)))))
 
+(defun draw-play (data width height)
+  (declare (ignorable width height))
+  (destructuring-bind (&key ((:player (&whole player
+                                       &key ((:attributes player-attributes))
+                                       &allow-other-keys)))
+                         objects log turn)
+      data
+    (let ((*player-x* (getf player :x))
+          (*player-y* (getf player :y)))
+      (display-each objects)
+      (display-health (getf player-attributes :health)
+                      (getf player-attributes :max-health)
+                      (getf player-attributes :previous-health))
+      (display-stamina (getf player-attributes :stamina)
+                       (getf player-attributes :max-stamina)
+                       (getf player-attributes :previous-stamina))
+      (display-log 5 log)
+      (let ((turn-string (format nil "turn: ~d" turn)))
+        (charms:write-string-at-point charms:*standard-window*
+                                      turn-string
+                                      (- width (length turn-string))
+                                      0)))))
+
+(defun draw-inventory (data width height)
+  (declare (ignorable width height))
+  (loop for item in (getf data :inventory)
+        for i from 0
+        do (destructuring-bind (&key
+                                  ((:attributes (&key charges max-charges)))
+                                  ((:display-name name))
+                                &allow-other-keys)
+               item
+             (charms:write-string-at-point charms:*standard-window*
+                                           (format nil "~a ~@[(~a/~a)~]"
+                                                   name
+                                                   charges
+                                                   max-charges)
+                                           0
+                                           i))))
+
 (defun update-and-display (char)
+  (charms:clear-window charms:*standard-window* :force-repaint t)
+
   (multiple-value-bind (width height)
       (charms:window-dimensions charms:*standard-window*)
-    (declare (ignorable width height))
-    (destructuring-bind (&key ((:player (&whole player
-                                         &key ((:attributes player-attributes))
-                                         &allow-other-keys)))
-                           objects log turn)
-        (rl:tick (char-to-action char))
-      (let ((*player-x* (getf player :x))
-            (*player-y* (getf player :y)))
-        (charms:clear-window charms:*standard-window* :force-repaint t)
-        (clear-screen charms:*standard-window*)
-        (display-each objects)
-        (display-health (getf player-attributes :health)
-                        (getf player-attributes :max-health)
-                        (getf player-attributes :previous-health))
-        (display-stamina (getf player-attributes :stamina)
-                         (getf player-attributes :max-stamina)
-                         (getf player-attributes :previous-stamina))
-        (display-log 5 log)
-        (let ((turn-string (format nil "turn: ~d" turn)))
-          (charms:write-string-at-point charms:*standard-window*
-                                        turn-string
-                                        (- width (length turn-string))
-                                        0)
-          (charms:refresh-window charms:*standard-window*))))))
+    (destructuring-bind (state data) (rl:tick (char-to-action char))
+      (setf *state* state)
+      (ecase state
+        (:play (draw-play data width height))
+        (:inventory (draw-inventory data width height)))))
+
+  (charms:refresh-window charms:*standard-window*))
 
 (defun main ()
-  (load-keys)
-  (handler-case
-      (charms:with-curses ()
-        (charms:disable-echoing)
-        (charms:enable-raw-input :interpret-control-characters t)
-        (charms:enable-non-blocking-mode charms:*standard-window*)
-        (charms/ll:halfdelay 1)
-        (charms/ll:curs-set 0)
-        (charms/ll:keypad charms/ll:*stdscr* 1)
-        (start-color)
+  (bt:make-thread
+   (lambda ()
+     (load-keys)
+     (handler-case
+         (charms:with-curses ()
+           (charms:disable-echoing)
+           (charms:enable-raw-input :interpret-control-characters t)
+           (charms:enable-non-blocking-mode charms:*standard-window*)
+           (charms/ll:halfdelay 1)
+           (charms/ll:curs-set 0)
+           (charms/ll:keypad charms/ll:*stdscr* 1)
+           (start-color)
 
-        (rl:initialize)
-        (update-and-display nil)
+           (rl:initialize)
+           (update-and-display nil)
 
-        (loop for c = (get-char-code)
-              when c
-                do (update-and-display c)))
-    (rl::quit-condition ())))
+           (loop for c = (get-char-code)
+                 when c
+                   do (update-and-display c)))
+       (rl::quit-condition ())))
+   :name "game thread"))

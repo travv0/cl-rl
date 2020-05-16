@@ -37,6 +37,7 @@
 
 (defmethod dump-object ((obj visible) &optional attributes)
   (list :name (make-keyword (class-name (primary-class-of-mixin obj)))
+        :display-name (display-name obj)
         :x (x obj)
         :y (y obj)
         :attributes attributes))
@@ -66,19 +67,30 @@
                                               :previous-stamina (previous-stamina *player*))
                                         attributes)))
 
+(defmethod dump-object ((obj rechargeable) &optional attributes)
+  (call-next-method obj (concatenate 'list
+                                     (list :charges (current-charges obj)
+                                           :max-charges (max-charges obj))
+                                     attributes)))
+
 (defvar *turn* 1)
+(defvar *state* :play)
 
 (defun dump-state ()
-  (list :player (dump-object *player*)
-        :log *log*
-        :turn *turn*
-        :objects (loop with result = '()
-                       for y below (array-dimension *pos-cache* 1)
-                       finally (return result)
-                       do (loop for x below (array-dimension *pos-cache* 0)
-                                for obj = (get-object-at-pos (pos x y))
-                                when obj
-                                  do (push (dump-object obj) result)))))
+  (ecase *state*
+    (:play
+     (list :player (dump-object *player*)
+           :log *log*
+           :turn *turn*
+           :objects (loop with result = '()
+                          for y below (array-dimension *pos-cache* 1)
+                          finally (return result)
+                          do (loop for x below (array-dimension *pos-cache* 0)
+                                   for obj = (get-object-at-pos (pos x y))
+                                   when obj
+                                     do (push (dump-object obj) result)))))
+    (:inventory
+     (list :inventory (mapcar #'dump-object (inventory *player*))))))
 
 (defun initialize ()
   (setf *turn* 1)
@@ -119,47 +131,51 @@
 
 (defun tick (action)
   (delete-from-mix *player* 'running)
-  (case action
-    ((nil))
-    (:move-left (setf (dx *player*) -1))
-    (:move-up (setf (dy *player*) -1))
-    (:move-right (setf (dx *player*) 1))
-    (:move-down (setf (dy *player*) 1))
-    (:move-up-left (setf (dx *player*) -1 (dy *player*) -1))
-    (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
-    (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
-    (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
-    (:run-left
-     (ensure-mix *player* 'running)
-     (setf (dx *player*) -1))
-    (:run-up
-     (ensure-mix *player* 'running)
-     (setf (dy *player*) -1))
-    (:run-right
-     (ensure-mix *player* 'running)
-     (setf (dx *player*) 1))
-    (:run-down
-     (ensure-mix *player* 'running)
-     (setf (dy *player*) 1))
-    (:run-up-left
-     (ensure-mix *player* 'running)
-     (setf (dx *player*) -1 (dy *player*) -1))
-    (:run-up-right
-     (ensure-mix *player* 'running)
-     (setf (dx *player*) 1 (dy *player*) -1))
-    (:run-down-left
-     (ensure-mix *player* 'running)
-     (setf (dx *player*) -1 (dy *player*) 1))
-    (:run-down-right
-     (ensure-mix *player* 'running)
-     (setf (dx *player*) 1 (dy *player*) 1))
-    (:toggle-shield (toggle-shield *player*))
-    (:reveal-map (mapc #'replace-memory (reverse *game-objects*)))
-    (:reset (initialize))
-    (:quit (error 'quit-condition))
+  (ecase *state*
+    (:play
+     (ecase action
+       ((nil))
+       (:move-left (setf (dx *player*) -1))
+       (:move-up (setf (dy *player*) -1))
+       (:move-right (setf (dx *player*) 1))
+       (:move-down (setf (dy *player*) 1))
+       (:move-up-left (setf (dx *player*) -1 (dy *player*) -1))
+       (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
+       (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
+       (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
+       (:run-left
+        (ensure-mix *player* 'running)
+        (setf (dx *player*) -1))
+       (:run-up
+        (ensure-mix *player* 'running)
+        (setf (dy *player*) -1))
+       (:run-right
+        (ensure-mix *player* 'running)
+        (setf (dx *player*) 1))
+       (:run-down
+        (ensure-mix *player* 'running)
+        (setf (dy *player*) 1))
+       (:run-up-left
+        (ensure-mix *player* 'running)
+        (setf (dx *player*) -1 (dy *player*) -1))
+       (:run-up-right
+        (ensure-mix *player* 'running)
+        (setf (dx *player*) 1 (dy *player*) -1))
+       (:run-down-left
+        (ensure-mix *player* 'running)
+        (setf (dx *player*) -1 (dy *player*) 1))
+       (:run-down-right
+        (ensure-mix *player* 'running)
+        (setf (dx *player*) 1 (dy *player*) 1))
+       (:toggle-shield (toggle-shield *player*))
+       (:reveal-map (mapc #'replace-memory (reverse *game-objects*)))
+       (:open-inventory (setf *state* :inventory))
+       (:reset (initialize))
+       (:quit (error 'quit-condition))))
 
-    (:apply-a (apply-item (first (inventory *player*)) *player*))
-    (t (format t "Unknown key: ~a (~d)~%" (code-char action) action)))
+    (:inventory
+     (case action
+       (:close-inventory (setf *state* :play)))))
 
   (loop do (when (not (plusp (health *player*)))
              (initialize))
@@ -184,4 +200,4 @@
            (incf *turn*)
         while (or (plusp (cooldown *player*)) (typep *player* 'attacking)))
 
-  (dump-state))
+  (list *state* (dump-state)))
