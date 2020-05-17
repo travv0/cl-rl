@@ -52,7 +52,12 @@
 
 (defun get-display-char (name attributes)
   (flet ((hostile (char color bold)
-           (values char color (if (getf attributes :attacking) :yellow :black) bold)))
+           (values char
+                   color
+                   (cond ((getf attributes :attacking) :yellow)
+                         ((getf attributes :blocking) :blue)
+                         (t :black))
+                   bold)))
     (case name
       (:player (hostile #\@ :white t))
       (:cell (values #\. :white :black nil))

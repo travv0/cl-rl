@@ -193,13 +193,21 @@
                      (not (c2mop:subtypep _1 (find-class 'modifier)))))
              (c2mop:class-precedence-list (class-of obj))))
 
+(defmethod raise-shield ((obj left-arm))
+  (unless (typep obj 'blocking)
+    (toggle-shield obj)))
+
+(defmethod lower-shield ((obj left-arm))
+  (when (typep obj 'blocking)
+    (toggle-shield obj)))
+
 (defmethod toggle-shield ((obj left-arm))
   (cond ((typep obj 'blocking)
          (write-to-log "~a lowered ~a"
                        (display-name obj)
                        (display-name (equip-left-arm obj)))
          (delete-from-mix obj 'blocking))
-        ((equip-left-arm obj)
+        ((and (equip-left-arm obj) (typep (equip-left-arm obj) 'shield))
          (write-to-log "~a raised ~a"
                        (display-name obj)
                        (display-name (equip-left-arm obj)))

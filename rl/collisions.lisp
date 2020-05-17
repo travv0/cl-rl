@@ -27,34 +27,48 @@
 (defparameter *unarmed-cooldown* 2)
 (defparameter *unarmed-windup* 1)
 
+(defmethod stamina-use ((arm right-arm))
+  (if (equip-right-arm arm)
+      (stamina-use (equip-right-arm arm))
+      *unarmed-stamina*))
+
+(defmethod weapon-windup ((arm right-arm))
+  (if (equip-right-arm arm)
+      (weapon-windup (equip-right-arm arm))
+      *unarmed-windup*))
+
+(defmethod weapon-cooldown ((arm right-arm))
+  (if (equip-right-arm arm)
+      (weapon-cooldown (equip-right-arm arm))
+      *unarmed-cooldown*))
+
 (defmethod collide :before ((obj alive) (arm right-arm))
-  (cond ((typep arm 'blocking) (write-to-log "~a could not attack - shield is raised"
-                                             (display-name arm)))
-        ((>= (stamina arm) (if (equip-right-arm arm)
-                               (stamina-use (equip-right-arm arm))
-                               *unarmed-stamina*))
-         (write-to-log "~a ~:[is preparing~;raised their weapon~] to attack"
-                       (display-name arm)
-                       (equip-right-arm arm))
-         (ensure-mix arm 'attacking)
-         (setf (current-windup arm) (if (equip-right-arm arm)
-                                        (weapon-windup (equip-right-arm arm))
-                                        *unarmed-windup*))
-         (setf (attacking-pos arm) (pos (x obj) (y obj))))
-        (t (write-to-log "~a could not attack - insufficient stamina"
-                         (display-name arm)))))
+  (let ((stamina-use (stamina-use arm)))
+    (when (or (typep arm 'player)
+              (and (plusp (- (stamina arm) stamina-use))
+                   (zerop (random (* 2 (floor (max-stamina arm) (- (stamina arm) stamina-use)))))))
+      (cond ((typep arm 'blocking)
+             (if (typep arm 'player)
+                 (write-to-log "~a could not attack - shield is raised"
+                               (display-name arm))
+                 (lower-shield arm)))
+            ((>= (stamina arm) stamina-use)
+             (write-to-log "~a ~:[is preparing~;raised their weapon~] to attack"
+                           (display-name arm)
+                           (equip-right-arm arm))
+             (ensure-mix arm 'attacking)
+             (setf (current-windup arm) (weapon-windup arm)
+                   (attacking-pos arm) (pos (x obj) (y obj))))
+            (t (write-to-log "~a could not attack - insufficient stamina"
+                             (display-name arm)))))))
 
 (defmethod attack :after (obj (arm attacking))
   (delete-from-mix arm 'attacking))
 
 (defmethod attack :after (obj (arm right-arm))
-  (let ((stamina-use (if (equip-right-arm arm)
-                         (stamina-use (equip-right-arm arm))
-                         *unarmed-stamina*)))
+  (let ((stamina-use (stamina-use arm)))
     (when (typep arm 'cooldown)
-      (let ((cooldown (if (equip-right-arm arm)
-                          (weapon-cooldown (equip-right-arm arm))
-                          *unarmed-cooldown*)))
+      (let ((cooldown (weapon-cooldown arm)))
         (cond ((typep obj 'blocking)
                (incf (cooldown arm) (* 2 cooldown))
                (write-to-log "~a's attacked was deflected by ~a's shield"
@@ -77,9 +91,7 @@
          (damage (if (typep obj 'blocking)
                      (ceiling (- raw-damage (* raw-damage (damage-reduction (equip-left-arm obj)))))
                      raw-damage))
-         (stamina-use (if (equip-right-arm arm)
-                          (stamina-use (equip-right-arm arm))
-                          *unarmed-stamina*)))
+         (stamina-use (stamina-use arm)))
     (when (typep obj 'blocking)
       (decf (stamina obj)
             (ceiling (* 2 (- stamina-use

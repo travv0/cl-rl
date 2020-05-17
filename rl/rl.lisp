@@ -57,6 +57,11 @@
                                      (list :attacking t)
                                      attributes)))
 
+(defmethod dump-object ((obj blocking) &optional attributes)
+  (call-next-method obj (concatenate 'list
+                                     (list :blocking t)
+                                     attributes)))
+
 (defmethod dump-object ((player player) &optional attributes)
   (call-next-method player (concatenate 'list
                                         (list :health (health *player*)
@@ -108,11 +113,11 @@
       (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
                                  :x (x pos)
                                  :y (y pos)))))
-  (loop repeat 5 do
-    (let ((pos (random-pos)))
-      (add-object (make-instance 'rat
-                                 :x (x pos)
-                                 :y (y pos)))))
+  ;; (loop repeat 5 do
+  ;;   (let ((pos (random-pos)))
+  ;;     (add-object (make-instance 'rat
+  ;;                                :x (x pos)
+  ;;                                :y (y pos)))))
   (loop repeat 10 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'warrior
@@ -131,73 +136,82 @@
 
 (defun tick (action)
   (delete-from-mix *player* 'running)
-  (ecase *state*
-    (:play
-     (ecase action
-       ((nil))
-       (:move-left (setf (dx *player*) -1))
-       (:move-up (setf (dy *player*) -1))
-       (:move-right (setf (dx *player*) 1))
-       (:move-down (setf (dy *player*) 1))
-       (:move-up-left (setf (dx *player*) -1 (dy *player*) -1))
-       (:move-up-right (setf (dx *player*) 1 (dy *player*) -1))
-       (:move-down-left (setf (dx *player*) -1 (dy *player*) 1))
-       (:move-down-right (setf (dx *player*) 1 (dy *player*) 1))
-       (:run-left
-        (ensure-mix *player* 'running)
-        (setf (dx *player*) -1))
-       (:run-up
-        (ensure-mix *player* 'running)
-        (setf (dy *player*) -1))
-       (:run-right
-        (ensure-mix *player* 'running)
-        (setf (dx *player*) 1))
-       (:run-down
-        (ensure-mix *player* 'running)
-        (setf (dy *player*) 1))
-       (:run-up-left
-        (ensure-mix *player* 'running)
-        (setf (dx *player*) -1 (dy *player*) -1))
-       (:run-up-right
-        (ensure-mix *player* 'running)
-        (setf (dx *player*) 1 (dy *player*) -1))
-       (:run-down-left
-        (ensure-mix *player* 'running)
-        (setf (dx *player*) -1 (dy *player*) 1))
-       (:run-down-right
-        (ensure-mix *player* 'running)
-        (setf (dx *player*) 1 (dy *player*) 1))
-       (:toggle-shield (toggle-shield *player*))
-       (:reveal-map (mapc #'replace-memory (reverse *game-objects*)))
-       (:open-inventory (setf *state* :inventory))
-       (:reset (initialize))
-       (:quit (error 'quit-condition))))
+  (when (ecase *state*
+          (:play
+           (ecase action
+             ((nil))
+             (:wait t)
+             (:move-left (setf (dx *player*) -1) t)
+             (:move-up (setf (dy *player*) -1) t)
+             (:move-right (setf (dx *player*) 1) t)
+             (:move-down (setf (dy *player*) 1) t)
+             (:move-up-left (setf (dx *player*) -1 (dy *player*) -1) t)
+             (:move-up-right (setf (dx *player*) 1 (dy *player*) -1) t)
+             (:move-down-left (setf (dx *player*) -1 (dy *player*) 1) t)
+             (:move-down-right (setf (dx *player*) 1 (dy *player*) 1) t)
+             (:run-left
+              (ensure-mix *player* 'running)
+              (setf (dx *player*) -1)
+              t)
+             (:run-up
+              (ensure-mix *player* 'running)
+              (setf (dy *player*) -1)
+              t)
+             (:run-right
+              (ensure-mix *player* 'running)
+              (setf (dx *player*) 1)
+              t)
+             (:run-down
+              (ensure-mix *player* 'running)
+              (setf (dy *player*) 1)
+              t)
+             (:run-up-left
+              (ensure-mix *player* 'running)
+              (setf (dx *player*) -1 (dy *player*) -1)
+              t)
+             (:run-up-right
+              (ensure-mix *player* 'running)
+              (setf (dx *player*) 1 (dy *player*) -1)
+              t)
+             (:run-down-left
+              (ensure-mix *player* 'running)
+              (setf (dx *player*) -1 (dy *player*) 1)
+              t)
+             (:run-down-right
+              (ensure-mix *player* 'running)
+              (setf (dx *player*) 1 (dy *player*) 1)
+              t)
+             (:toggle-shield (toggle-shield *player*) t)
+             (:reveal-map (mapc #'replace-memory (reverse *game-objects*)) nil)
+             (:open-inventory (setf *state* :inventory) nil)
+             (:reset (initialize) nil)
+             (:quit (error 'quit-condition))))
 
-    (:inventory
-     (case action
-       (:close-inventory (setf *state* :play)))))
+          (:inventory
+           (case action
+             (:close-inventory (setf *state* :play) nil))))
 
-  (loop do (when (not (plusp (health *player*)))
-             (initialize))
+    (loop do (when (not (plusp (health *player*)))
+               (initialize))
 
-           (let ((*game-objects* (cons *player* *game-objects*)))
-             (unless (or (cooling-down-p *player*) (attacking-p *player*))
-               (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
+             (let ((*game-objects* (cons *player* *game-objects*)))
+               (unless (or (cooling-down-p *player*) (attacking-p *player*))
+                 (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
 
-             (dolist (obj *game-objects*)
-               (unless (typep obj 'deleted)
-                 (cond ((attacking-p obj) (progress-attack obj))
-                       ((cooling-down-p obj) (cool-down obj))
-                       (t (update obj))))))
+               (dolist (obj *game-objects*)
+                 (unless (typep obj 'deleted)
+                   (cond ((attacking-p obj) (progress-attack obj))
+                         ((cooling-down-p obj) (cool-down obj))
+                         (t (update obj))))))
 
-           (setf *game-objects*
-                 (loop for obj in *game-objects*
-                       if (typep obj 'deleted)
-                         do (delete-from-mix obj 'deleted)
-                            (removef (aref *pos-cache* (x obj) (y obj)) obj)
-                       else collect obj))
+             (setf *game-objects*
+                   (loop for obj in *game-objects*
+                         if (typep obj 'deleted)
+                           do (delete-from-mix obj 'deleted)
+                              (removef (aref *pos-cache* (x obj) (y obj)) obj)
+                         else collect obj))
 
-           (incf *turn*)
-        while (or (plusp (cooldown *player*)) (typep *player* 'attacking)))
+             (incf *turn*)
+          while (or (plusp (cooldown *player*)) (typep *player* 'attacking))))
 
   (list *state* (dump-state)))

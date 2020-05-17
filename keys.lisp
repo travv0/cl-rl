@@ -14,6 +14,7 @@
         (run-up-right #\U)
         (run-down-left #\B)
         (run-down-right #\N)
+        (wait #\.)
         (toggle-shield #\s)
         (reveal-map #\R)
         (reset #\r)
