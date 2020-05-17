@@ -96,11 +96,10 @@
     (when node (reverse (node-path node)))))
 
 (defmethod move-toward-goal ((obj moveable) (goal-pos pos))
-  (let ((path (find-path obj goal-pos)))
-    (when path
-      (when-let* ((next-pos (second path))
-                  (dx (- (car next-pos) (x obj)))
-                  (dy (- (cdr next-pos) (y obj))))
-        (setf (dx obj) dx
-              (dy obj) dy)
-        t))))
+  (when-let* ((path (find-path obj goal-pos))
+              (next-pos (second path))
+              (dx (- (car next-pos) (x obj)))
+              (dy (- (cdr next-pos) (y obj))))
+    (setf (dx obj) dx
+          (dy obj) dy)
+    t))

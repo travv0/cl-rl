@@ -65,7 +65,11 @@
                           (can-see-p enemy *player*))
                  (setf (enemy-state enemy) :chasing)))
     (:fleeing
-     (move-toward-goal enemy (wandering-to enemy))
+     (lower-shield enemy)
+     (loop for moved = (move-toward-goal enemy (wandering-to enemy))
+           for i from 1
+           do (setf (wandering-to enemy) (random-pos))
+           until (or moved (> i 5)))
      (when (and (>= (stamina enemy) (* 1.5 (stamina-use enemy)))
                 (zerop (random 20)))
        (setf (enemy-state enemy) :chasing)))))
