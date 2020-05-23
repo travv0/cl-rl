@@ -21,7 +21,32 @@
          (call-next-method)
          (decf (current-charges item)))
         (t (write-to-log "could not apply ~a - out of charges"
-                         (display-name item)))))
+                         (display-name item))
+           (setf *state* :play))))
 
 (defmethod apply-item ((potion health-potion) (obj alive))
   (incf (health obj) (regeneration-amount potion)))
+
+(defmethod apply-item :after ((potion health-potion) (obj alive))
+  (write-to-log "~a drank a ~a" (display-name obj) (display-name potion)))
+
+(defmethod apply-item (item obj)
+  (write-to-log "~a was unable to use ~a - don't know how"
+                (display-name obj)
+                (display-name item)))
+
+(defmethod apply-item :after (item obj)
+  (setf *state* :play))
+
+(defparameter *inventory-chars*
+  (append (loop for c from (char-code #\a) to (char-code #\z)
+                collect (code-char c))
+          (loop for c from (char-code #\A) to (char-code #\Z)
+                collect (code-char c))))
+
+(defmethod add-to-inventory ((item item) (inventory inventory))
+  (loop for c in *inventory-chars*
+        unless (assoc-value (inventory inventory) c)
+          do (push (cons c item) (inventory inventory))
+             (setf (inventory inventory) (sort (inventory inventory) #'char< :key #'car))
+             (return (inventory inventory))))

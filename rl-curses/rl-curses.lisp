@@ -162,7 +162,8 @@
 (defun char-to-action (char)
   (and char
        (or (@ *key-action-map* *state* char)
-           (@ *key-action-map* *state* (code-char char)))))
+           (@ *key-action-map* *state* (code-char char))
+           (and (eql *state* :inventory) (code-char char)))))
 
 (defun map-keys (input)
   (let ((key-action-map (make-hash-table)))
@@ -226,15 +227,17 @@
 (defun draw-inventory (data width height)
   (declare (ignorable width height))
   (charms:clear-window charms:*standard-window* :force-repaint t)
-  (loop for item across (getf data :inventory)
+  (loop for item in (getf data :inventory)
         for i from 0
-        do (destructuring-bind (&key
+        do (destructuring-bind (char
+                                &key
                                   ((:attributes (&key charges max-charges)))
                                   ((:display-name name))
                                 &allow-other-keys)
                item
              (charms:write-string-at-point charms:*standard-window*
-                                           (format nil "~a ~@[(~a/~a)~]"
+                                           (format nil "~c. ~a ~@[(~a/~a)~]"
+                                                   char
                                                    name
                                                    charges
                                                    max-charges)

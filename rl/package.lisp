@@ -9,7 +9,8 @@
                 #:rcurry
                 #:removef
                 #:make-keyword
-                #:lastcar)
+                #:lastcar
+                #:assoc-value)
   (:import-from #:serapeum
                 #:op
                 #:do-hash-table)

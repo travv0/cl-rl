@@ -14,13 +14,14 @@
                 (member (char (display-name obj) 0) '(#\a #\e #\i #\o #\u))))
 
 (defmethod pick-up ((obj item) (moving-obj inventory))
-  (vector-push-extend obj (inventory moving-obj)))
+  (add-to-inventory obj moving-obj))
 
 (defmethod collide ((obj item) (moving-obj inventory))
-  (pick-up obj moving-obj))
-
-(defmethod collide :after ((obj item) (moving-obj inventory))
-  (ensure-mix obj 'deleted))
+  (if (pick-up obj moving-obj)
+      (ensure-mix obj 'deleted)
+      (write-to-log "~a was unable to pick up ~a - inventory full"
+                    (display-name moving-obj)
+                    (display-name obj))))
 
 (defparameter *unarmed-damage* 10)
 (defparameter *unarmed-stamina* 10)

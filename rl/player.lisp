@@ -10,11 +10,7 @@
    (%dexterity :initform 5)
    (%endurance :initform 5)
    (%vitality :initform 5)
-   (%inventory :initform (make-array '(1)
-                                     :initial-element (make-instance 'health-potion :charges 5)
-                                     :element-type 'visible
-                                     :adjustable t
-                                     :fill-pointer t))))
+   (%inventory :initform (list (cons #\a (make-instance 'health-potion :charges 5))))))
 
 (defmethod update :after ((player player))
   (loop for y below (array-dimension *pos-cache* 1) do

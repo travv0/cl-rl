@@ -2,9 +2,7 @@
 
 (defclass enemy (alive solid visible)
   ((%enemy-state :initarg :enemy-state
-                 :initform (if (zerop (random 2))
-                               :wandering
-                               :sleeping)
+                 :initform :sleeping
                  :accessor enemy-state)
    (%wandering-to :initform (random-pos)
                   :accessor wandering-to)
@@ -47,8 +45,7 @@
                     ((< (stamina enemy) (stamina-use enemy))
                      (setf (enemy-state enemy) :fleeing))
                     (t (when (and (equip-left-arm enemy) (typep (equip-left-arm enemy) 'shield)
-                                  (or (> (distance enemy *player*) 1)
-                                      (zerop (random 10))))
+                                  (>= (distance enemy *player*) 2))
                          (raise-shield enemy))
                        (move-toward-goal enemy *player*))))
     (:wandering

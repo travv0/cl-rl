@@ -95,7 +95,8 @@
                                    when obj
                                      do (push (dump-object obj) result)))))
     (:inventory
-     (list :inventory (map 'vector #'dump-object (inventory *player*))))))
+     (list :inventory (loop for (char . item) in (inventory *player*)
+                            collect (cons char (dump-object item)))))))
 
 (defun initialize ()
   (setf *turn* 1)
@@ -189,7 +190,11 @@
 
           (:inventory
            (case action
-             (:close-inventory (setf *state* :play) nil))))
+             (:close-inventory (setf *state* :play) nil)
+             (#.*inventory-chars*
+              (apply-item (assoc-value (inventory *player*) action)
+                          *player*)
+              nil))))
 
     (loop do (when (not (plusp (health *player*)))
                (initialize))
