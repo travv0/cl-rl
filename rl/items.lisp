@@ -3,18 +3,23 @@
 (defclass item (visible)
   ())
 
-(defclass rechargeable ()
+(defclass rechargeable (useable)
   ((%max-charges :initarg :charges
                  :initform (error "max-charges is required")
                  :accessor max-charges)
    (%current-charges :accessor current-charges)))
 
+(defclass useable ()
+  ((%use-cooldown :initform (error "use-cooldown is required")
+                  :accessor use-cooldown)))
+
 (defmethod initialize-instance :after ((obj rechargeable) &key)
   (setf (current-charges obj) (max-charges obj)))
 
-(defclass health-potion (rechargeable item)
+(defclass health-potion (rechargeable useable item)
   ((%regeneration-amount :initform 40 :reader regeneration-amount)
-   (%max-charges :initform 5)))
+   (%max-charges :initform 5)
+   (%use-cooldown :initform 15)))
 
 (defmethod apply-item :around ((item rechargeable) obj)
   (cond ((plusp (current-charges item))
@@ -29,6 +34,9 @@
 
 (defmethod apply-item :after ((potion health-potion) (obj alive))
   (write-to-log "~a drank a ~a" (display-name obj) (display-name potion)))
+
+(defmethod apply-item :after ((item useable) (obj cooldown))
+  (incf (cooldown obj) (use-cooldown item)))
 
 (defmethod apply-item (item obj)
   (write-to-log "~a was unable to use ~a - don't know how"

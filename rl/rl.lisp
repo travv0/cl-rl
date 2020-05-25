@@ -183,9 +183,9 @@
            (case action
              (:close-inventory (setf *state* :play) nil)
              (#.*inventory-chars*
-              (apply-item (assoc-value (inventory *player*) action)
-                          *player*)
-              nil))))
+              (let ((item (assoc-value (inventory *player*) action)))
+                (apply-item item *player*)
+                (typep item 'useable))))))
 
     (loop do (when (not (plusp (health *player*)))
                (initialize))
