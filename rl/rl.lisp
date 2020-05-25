@@ -133,7 +133,9 @@
     (let ((pos (random-pos)))
       (add-object (make-instance 'kite-shield
                                  :x (x pos)
-                                 :y (y pos))))))
+                                 :y (y pos)))))
+
+  (update *player*))
 
 (defun tick (action)
   (delete-from-mix *player* 'running)
