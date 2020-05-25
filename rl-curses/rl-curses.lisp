@@ -249,25 +249,26 @@
 
   (charms:refresh-window charms:*standard-window*))
 
+(defun dev ()
+  (bt:make-thread (lambda () (main))
+                  :name "game thread"))
+
 (defun main ()
-  (bt:make-thread
-   (lambda ()
-     (load-keys)
-     (handler-case
-         (charms:with-curses ()
-           (charms:disable-echoing)
-           (charms:enable-raw-input :interpret-control-characters t)
-           (charms:enable-non-blocking-mode charms:*standard-window*)
-           (charms/ll:halfdelay 1)
-           (charms/ll:curs-set 0)
-           (charms/ll:keypad charms/ll:*stdscr* 1)
-           (start-color)
+  (load-keys)
+  (handler-case
+      (charms:with-curses ()
+        (charms:disable-echoing)
+        (charms:enable-raw-input :interpret-control-characters t)
+        (charms:enable-non-blocking-mode charms:*standard-window*)
+        (charms/ll:halfdelay 1)
+        (charms/ll:curs-set 0)
+        (charms/ll:keypad charms/ll:*stdscr* 1)
+        (start-color)
 
-           (rl:initialize)
-           (update-and-display nil)
+        (rl:initialize)
+        (update-and-display nil)
 
-           (loop for c = (get-char-code)
-                 when c
-                   do (update-and-display c)))
-       (rl::quit-condition ())))
-   :name "game thread"))
+        (loop for c = (get-char-code)
+              when c
+                do (update-and-display c)))
+    (rl::quit-condition ())))
