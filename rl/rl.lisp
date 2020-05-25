@@ -52,16 +52,6 @@
                                         (list :memory-of (memory-of memory))
                                         attributes)))
 
-(defmethod dump-object ((obj attacking) &optional attributes)
-  (call-next-method obj (concatenate 'list
-                                     (list :attacking t)
-                                     attributes)))
-
-(defmethod dump-object ((obj blocking) &optional attributes)
-  (call-next-method obj (concatenate 'list
-                                     (list :blocking t)
-                                     attributes)))
-
 (defmethod dump-object ((player player) &optional attributes)
   (call-next-method player (concatenate 'list
                                         (list :health (health *player*)
@@ -184,7 +174,6 @@
               (ensure-mix *player* 'running)
               (setf (dx *player*) 1 (dy *player*) 1)
               t)
-             (:toggle-shield (toggle-shield *player*) t)
              (:reveal-map (mapc #'replace-memory (reverse *game-objects*)) nil)
              (:open-inventory (setf *state* :inventory) nil)
              (:reset (initialize) nil)
@@ -202,14 +191,14 @@
                (initialize))
 
              (let ((*game-objects* (cons *player* *game-objects*)))
-               (unless (or (cooling-down-p *player*) (attacking-p *player*))
+               (unless (cooling-down-p *player*)
                  (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
 
                (dolist (obj *game-objects*)
                  (unless (typep obj 'deleted)
-                   (cond ((attacking-p obj) (progress-attack obj))
-                         ((cooling-down-p obj) (cool-down obj))
-                         (t (update obj))))))
+                   (if (cooling-down-p obj)
+                       (cool-down obj)
+                       (update obj)))))
 
              (setf *game-objects*
                    (loop for obj in *game-objects*
@@ -219,6 +208,6 @@
                          else collect obj))
 
              (incf *turn*)
-          while (or (plusp (cooldown *player*)) (typep *player* 'attacking))))
+          while (plusp (cooldown *player*))))
 
   (list *state* (dump-state)))

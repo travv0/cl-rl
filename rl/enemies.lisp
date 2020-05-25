@@ -44,12 +44,8 @@
                      (setf (enemy-state enemy) :wandering))
                     ((< (stamina enemy) (stamina-use enemy))
                      (setf (enemy-state enemy) :fleeing))
-                    (t (when (and (equip-left-arm enemy) (typep (equip-left-arm enemy) 'shield)
-                                  (>= (distance enemy *player*) 2))
-                         (raise-shield enemy))
-                       (move-toward-goal enemy *player*))))
+                    (t (move-toward-goal enemy *player*))))
     (:wandering
-     (lower-shield enemy)
      (move-toward-goal enemy (wandering-to enemy))
      (cond ((and (< (random 5) 4)
                  (< (distance enemy *player*) (view-distance enemy))
@@ -62,7 +58,6 @@
                           (can-see-p enemy *player*))
                  (setf (enemy-state enemy) :chasing)))
     (:fleeing
-     (lower-shield enemy)
      (loop for moved = (move-toward-goal enemy (wandering-to enemy))
            for i from 1
            do (setf (wandering-to enemy) (random-pos))

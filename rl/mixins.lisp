@@ -3,10 +3,6 @@
 (defclass cooldown ()
   ((%cooldown :initform 0 :accessor cooldown)))
 
-(defclass attacking ()
-  ((%current-windup :initform 0 :accessor current-windup)
-   (%attacking-pos :accessor attacking-pos)))
-
 (defclass moveable (pos cooldown)
   ((%dx :initarg :dx :initform 0 :accessor dx)
    (%dy :initarg :dy :initform 0 :accessor dy)
@@ -39,9 +35,6 @@
 
 (defclass left-arm ()
   ((%equip-left-arm :initarg :equip-left-arm :initform nil :accessor equip-left-arm)))
-
-(defclass blocking ()
-  ())
 
 (defclass damage ()
   ((%damage :initarg :damage :initform (error "damage must be set") :accessor damage)))
@@ -163,7 +156,7 @@
 (defmethod update :around ((obj alive))
   (let ((start-stamina (stamina obj)))
     (call-next-method)
-    (unless (or (< (stamina obj) start-stamina) (typep obj 'blocking))
+    (unless (< (stamina obj) start-stamina)
       (let ((increase (if (and (typep obj 'cooldown) (not (zerop (cooldown obj))))
                           (cooldown obj)
                           1)))
@@ -176,37 +169,8 @@
 (defun cooling-down-p (obj)
   (and (typep obj 'cooldown) (plusp (cooldown obj))))
 
-(defun attacking-p (obj)
-  (typep obj 'attacking))
-
-(defmethod progress-attack ((obj attacking))
-  (if (plusp (current-windup obj))
-      (decf (current-windup obj))
-      (attack (get-object-at-pos (attacking-pos obj)) obj)))
-
 (defun get-modifiers (obj)
   (remove-if (op (or (typep _1 'mixin-class)
                      (eq _1 (find-class 'modifier))
                      (not (c2mop:subtypep _1 (find-class 'modifier)))))
              (c2mop:class-precedence-list (class-of obj))))
-
-(defmethod raise-shield ((obj left-arm))
-  (unless (typep obj 'blocking)
-    (toggle-shield obj)))
-
-(defmethod lower-shield ((obj left-arm))
-  (when (typep obj 'blocking)
-    (toggle-shield obj)))
-
-(defmethod toggle-shield ((obj left-arm))
-  (cond ((typep obj 'blocking)
-         (write-to-log "~a lowered ~a"
-                       (display-name obj)
-                       (display-name (equip-left-arm obj)))
-         (delete-from-mix obj 'blocking))
-        ((and (equip-left-arm obj) (typep (equip-left-arm obj) 'shield))
-         (write-to-log "~a raised ~a"
-                       (display-name obj)
-                       (display-name (equip-left-arm obj)))
-         (ensure-mix obj 'blocking))
-        (t (write-to-log "~a doesn't have a shield equipped" (display-name obj)))))

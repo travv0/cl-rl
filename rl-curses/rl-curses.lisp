@@ -51,31 +51,25 @@
     (display obj)))
 
 (defun get-display-char (name attributes)
-  (flet ((hostile (char color bold)
-           (values char
-                   color
-                   (cond ((getf attributes :attacking) :yellow)
-                         ((getf attributes :blocking) :blue)
-                         (t :black))
-                   bold)))
-    (case name
-      (:player (hostile #\@ :white t))
-      (:cell (values #\. :white :black nil))
-      (:wall (values #\# :yellow :black nil))
-      (:door (values (if (getf attributes :open) #\' #\+) :red :black nil))
-      (:goblin (hostile #\g :green nil))
-      (:goblin-fighter (hostile #\g :green t))
-      (:rat (hostile #\r :white nil))
-      (:warrior (hostile #\w :red nil))
-      (:potion (values #\! :yellow :black t))
-      ((:dagger :sword) (values #\) :yellow :black nil))
-      (:kite-shield (values #\] :yellow :black nil))
-      (:memory
-       (display (getf attributes :memory-of) t)
-       (return-from get-display-char))
-      (t
-       #-release (error "~s fell through case expression" name)
-       #+release (values #\? :white :black nil)))))
+  (case name
+    (:player (values #\@ :white :black t))
+    (:cell (values #\. :white :black nil))
+    (:wall (values #\# :yellow :black nil))
+    (:door (values (if (getf attributes :open) #\' #\+) :red :black nil))
+    (:goblin (values #\g :green :black nil))
+    (:goblin-fighter (values #\g :green :black t))
+    (:rat (values #\r :white :black nil))
+    (:warrior (values #\w :red :black nil))
+    (:potion (values #\! :yellow :black t))
+    ((:dagger :sword) (values #\) :yellow :black nil))
+    (:kite-shield (values #\] :yellow :black nil))
+    (:memory
+     (display (getf attributes :memory-of) t)
+     (return-from get-display-char))
+    ((nil) (return-from get-display-char))
+    (t
+     #-release (error "~s fell through case expression" name)
+     #+release (values #\? :white :black nil))))
 
 (desfun display ((&key name x y attributes) &optional memory-p)
   (multiple-value-bind (char fg bg bold)

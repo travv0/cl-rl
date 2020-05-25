@@ -48,62 +48,29 @@
     (when (or (typep arm 'player)
               (and (plusp (- (stamina arm) stamina-use))
                    (zerop (random (* 2 (floor (max-stamina arm) (- (stamina arm) stamina-use)))))))
-      (cond ((typep arm 'blocking)
-             (if (typep arm 'player)
-                 (write-to-log "~a could not attack - shield is raised"
-                               (display-name arm))
-                 (lower-shield arm)))
-            ((>= (stamina arm) stamina-use)
-             (write-to-log "~a ~:[is preparing~;raised their weapon~] to attack"
-                           (display-name arm)
-                           (equip-right-arm arm))
-             (ensure-mix arm 'attacking)
-             (setf (current-windup arm) (weapon-windup arm)
-                   (attacking-pos arm) (pos (x obj) (y obj))))
-            (t (write-to-log "~a could not attack - insufficient stamina"
-                             (display-name arm)))))))
-
-(defmethod attack :after (obj (arm attacking))
-  (delete-from-mix arm 'attacking))
+      (if (>= (stamina arm) stamina-use)
+          (attack obj arm)
+          (write-to-log "~a could not attack - insufficient stamina"
+                        (display-name arm))))))
 
 (defmethod attack :after (obj (arm right-arm))
   (let ((stamina-use (stamina-use arm)))
     (when (typep arm 'cooldown)
       (let ((cooldown (weapon-cooldown arm)))
-        (cond ((typep obj 'blocking)
-               (incf (cooldown arm) (* 2 cooldown))
-               (write-to-log "~a's attacked was deflected by ~a's shield"
-                             (display-name arm) (display-name obj)))
-              (t (incf (cooldown arm) cooldown)))))
+        (incf (cooldown arm) cooldown)))
     (decf (stamina arm) stamina-use)))
 
 (defmethod attack :after ((obj cooldown) (arm right-arm))
-  (unless (typep obj 'blocking)
-    (let ((weapon (equip-right-arm arm)))
-      (incf (cooldown obj) (if weapon
-                               (weapon-cooldown weapon)
-                               *unarmed-cooldown*)))))
+  (let ((weapon (equip-right-arm arm)))
+    (incf (cooldown obj) (if weapon
+                             (weapon-cooldown weapon)
+                             *unarmed-cooldown*))))
 
 (defmethod attack (obj (arm right-arm))
   (write-to-log "~a hit only air!" (display-name arm)))
 
 (defmethod attack ((obj alive) (arm right-arm))
-  (let* ((raw-damage (calculate-damage (equip-right-arm arm) arm (resistances obj)))
-         (damage (if (typep obj 'blocking)
-                     (ceiling (- raw-damage (* raw-damage (damage-reduction (equip-left-arm obj)))))
-                     raw-damage))
-         (stamina-use (stamina-use arm)))
-    (when (typep obj 'blocking)
-      (decf (stamina obj)
-            (ceiling (* 2 (- stamina-use
-                             (* stamina-use (stability (equip-left-arm obj)))))))
-      (when (<= (stamina obj) 0)
-        (setf (stamina obj) 0
-              damage raw-damage)
-        (delete-from-mix obj 'blocking)
-        (write-to-log "~a was too exhausted to block ~a's attack and lowered their shield"
-                      (display-name obj) (display-name arm))))
-
+  (let* ((damage (calculate-damage (equip-right-arm arm) arm (resistances obj))))
     (write-to-log "~a attacked ~a for ~d damage"
                   (display-name arm)
                   (display-name obj)
