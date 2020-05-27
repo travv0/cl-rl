@@ -104,6 +104,15 @@
 (defclass humanoid (inventory right-arm left-arm)
   ())
 
+(defmethod initialize-instance :after ((obj humanoid) &key)
+  (setf (equip-right-arm obj) (loop for (char . item) in (inventory obj)
+                                    when (and (typep item 'weapon)
+                                              (not (typep item 'shield)))
+                                      return item))
+  (setf (equip-left-arm obj) (loop for (char . item) in (inventory obj)
+                                   when (typep item 'shield)
+                                     return item)))
+
 (defun make-resistance (type &optional amount)
   (let ((resistance (make-instance 'resistance :resistance-to (find-class type))))
     (when amount

@@ -4,13 +4,13 @@
 (defun player () *player*)
 
 (defclass player (alive visible solid can-see humanoid)
-  ((%equip-right-arm :initform (make-instance 'sword))
-   (%equip-left-arm :initform (make-instance 'kite-shield))
-   (%strength :initform 10)
+  ((%strength :initform 10)
    (%dexterity :initform 10)
    (%endurance :initform 10)
    (%vitality :initform 10)
-   (%inventory :initform (list (cons #\a (make-instance 'health-potion :charges 5))))))
+   (%inventory :initform (list (cons #\a (make-instance 'health-potion :charges 5))
+                               (cons #\b (make-instance 'sword))
+                               (cons #\c (make-instance 'kite-shield))))))
 
 (defmethod update :after ((player player))
   (loop for y below (array-dimension *pos-cache* 1) do

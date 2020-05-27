@@ -196,8 +196,8 @@
 (defun draw-play (data width height)
   (declare (ignorable width height))
   (destructuring-bind (&key ((:player (&whole player
-                                       &key ((:attributes player-attributes))
-                                       &allow-other-keys)))
+                                              &key ((:attributes player-attributes))
+                                              &allow-other-keys)))
                          objects log turn)
       data
     (let ((*player-x* (getf player :x))
@@ -225,16 +225,17 @@
         for i from 0
         do (destructuring-bind (char
                                 &key
-                                  ((:attributes (&key charges max-charges)))
+                                  ((:attributes (&key charges max-charges equipped)))
                                   ((:display-name name))
-                                &allow-other-keys)
+                                  &allow-other-keys)
                item
              (charms:write-string-at-point charms:*standard-window*
-                                           (format nil "~c. ~a ~@[(~a/~a)~]"
+                                           (format nil "~c. ~a ~@[~a~]~@[/~a~]~@[(equipped: ~a)~]"
                                                    char
                                                    name
                                                    charges
-                                                   max-charges)
+                                                   max-charges
+                                                   equipped)
                                            0
                                            i))))
 

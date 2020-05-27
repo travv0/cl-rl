@@ -86,7 +86,10 @@
                                      do (push (dump-object obj) result)))))
     (:inventory
      (list :inventory (loop for (char . item) in (inventory *player*)
-                            collect (cons char (dump-object item)))))))
+                            collect (cons char (dump-object item
+                                                            (list :equipped
+                                                                  (cond ((eq (equip-left-arm *player*) item) "left hand")
+                                                                        ((eq (equip-right-arm *player*) item) "right hand"))))))))))
 
 (defun initialize ()
   (setf *turn* 1)
