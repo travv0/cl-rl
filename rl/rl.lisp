@@ -22,7 +22,7 @@
 
 (defmethod display-name (obj)
   (flet ((format-name (class)
-           (str:replace-all "-" " " (string-downcase (class-name class)))))
+           (substitute #\space #\- (string-downcase (class-name class)))))
     (let ((obj-name (format-name (primary-class-of-mixin obj)))
           (obj-modifiers (mapcar (op (format-name _))
                                  (get-modifiers obj))))
