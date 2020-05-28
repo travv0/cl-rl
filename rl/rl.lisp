@@ -20,13 +20,18 @@
       (mixin-class (lastcar (c2mop:class-direct-superclasses class)))
       (t (first (c2mop:class-precedence-list class))))))
 
+(defparameter *name-cache* (make-hash-table))
+
 (defmethod display-name (obj)
-  (flet ((format-name (class)
-           (substitute #\space #\- (string-downcase (class-name class)))))
-    (let ((obj-name (format-name (primary-class-of-mixin obj)))
-          (obj-modifiers (mapcar (op (format-name _))
-                                 (get-modifiers obj))))
-      (format nil "~{~a ~}~a" obj-modifiers obj-name))))
+  (if-let ((name (gethash obj *name-cache*)))
+    name
+    (flet ((format-name (class)
+             (substitute #\space #\- (string-downcase (class-name class)))))
+      (let ((obj-name (format-name (primary-class-of-mixin obj)))
+            (obj-modifiers (mapcar (op (format-name _))
+                                   (get-modifiers obj))))
+        (setf (gethash obj *name-cache*)
+              (format nil "~{~a ~}~a" obj-modifiers obj-name))))))
 
 (define-condition quit-condition () ())
 

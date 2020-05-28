@@ -5,6 +5,7 @@
   (:import-from #:alexandria
                 #:when-let
                 #:when-let*
+                #:if-let
                 #:curry
                 #:rcurry
                 #:removef
