@@ -1,7 +1,8 @@
 ;;;; package.lisp
 
 (defpackage #:rl
-  (:use #:cl #:box.ecs #:dynamic-mixins)
+  (:use #:cl #:dynamic-mixins)
+  (:local-nicknames (:dungen :net.mfiano.lisp.dungen))
   (:import-from #:alexandria
                 #:when-let
                 #:when-let*
