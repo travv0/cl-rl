@@ -2,7 +2,7 @@
 
 (in-package #:rl-sdl2)
 
-(defparameter *tile-size* 16)
+(defparameter *tile-size* 32)
 
 (defmacro init-textures ()
   (let (result)
@@ -32,7 +32,7 @@
 (defun get-image (name attributes)
   (case name
     (:player *player-image*)
-    (:cell nil)
+    (:cell *floor-image*)
     (:wall *tile-image*)
     (:door (unless (getf attributes :open) *bug-image*))
     ((:goblin :goblin-fighter :rat :warrior) *worm-image*)
@@ -67,7 +67,7 @@
             (sdl2:set-texture-color-mod image 64 64 64)
             (sdl2:set-texture-color-mod image 255 255 255))
         (sdl2:render-copy *renderer* image
-                          :dest-rect (sdl2:make-rect x y 16 16))))))
+                          :dest-rect (sdl2:make-rect x y *tile-size* *tile-size*))))))
 
 (defvar *key-action-map* (make-hash-table))
 

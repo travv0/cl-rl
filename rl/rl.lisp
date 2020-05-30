@@ -86,9 +86,10 @@
                           for y below (array-dimension *pos-cache* 1)
                           finally (return result)
                           do (loop for x below (array-dimension *pos-cache* 0)
-                                   for obj = (get-object-at-pos (pos x y))
-                                   when obj
-                                     do (push (dump-object obj) result)))))
+                                   for objs = (get-visible-objects-at-pos (pos x y))
+                                   when objs
+                                     do (setf result (append (reverse (mapcar #'dump-object objs))
+                                                             result))))))
     (:inventory
      (list :inventory (loop for (char . item) in (inventory *player*)
                             collect (cons char (dump-object item
@@ -182,7 +183,7 @@
               (ensure-mix *player* 'running)
               (setf (dx *player*) 1 (dy *player*) 1)
               t)
-             (:reveal-map (mapc #'replace-memory (reverse *game-objects*)) nil)
+             (:reveal-map (mapc #'add-memory (reverse *game-objects*)) nil)
              (:open-inventory (setf *state* :inventory) nil)
              (:reset (initialize) nil)
              (:quit (error 'quit-condition))))

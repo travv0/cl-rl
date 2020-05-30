@@ -17,16 +17,18 @@
 (defclass cell (visible)
   ())
 
-(defun replace-memory (obj)
-  (let ((cache (aref *pos-cache* (x obj) (y obj))))
-    (setf (aref *pos-cache* (x obj) (y obj))
-          (remove-if (op (typep _ 'memory)) cache)
-          (aref *pos-cache* (x obj) (y obj))
-          (append (aref *pos-cache* (x obj) (y obj))
-                  (list (make-instance 'memory
-                                       :memory-of (dump-object obj)
-                                       :x (x obj)
-                                       :y (y obj)))))))
+(defun clear-memories (pos)
+  (setf (aref *pos-cache* (x pos) (y pos))
+        (remove-if (op (typep _ 'memory))
+                   (aref *pos-cache* (x pos) (y pos)))))
+
+(defun add-memory (obj)
+  (setf (aref *pos-cache* (x obj) (y obj))
+        (append (aref *pos-cache* (x obj) (y obj))
+                (list (make-instance 'memory
+                                     :memory-of (dump-object obj)
+                                     :x (x obj)
+                                     :y (y obj))))))
 
 (defun should-display (obj)
   (or (typep obj 'can-see) (typep obj 'memory)))
@@ -67,7 +69,12 @@
              (<= 0 (y pos) (1- *stage-height*)))
     (aref *pos-cache* (x pos) (y pos))))
 
-(defun get-object-at-pos (pos)
+(defun get-visible-objects-at-pos (pos)
+  (when (and (<= 0 (x pos) (1- *stage-width*))
+             (<= 0 (y pos) (1- *stage-height*)))
+    (remove-if-not #'should-display (aref *pos-cache* (x pos) (y pos)))))
+
+(defun get-visible-object-at-pos (pos)
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
     (find-if #'should-display (aref *pos-cache* (x pos) (y pos)))))

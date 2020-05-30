@@ -81,9 +81,9 @@
 (defvar *player-y*)
 
 (defun draw (x y char foreground-color background-color bold &optional memory-p)
-  (let ((foreground-color (if memory-p :black foreground-color))
+  (let ((foreground-color (if memory-p :blue foreground-color))
         (background-color (if memory-p :black background-color))
-        (bold (if memory-p t bold)))
+        (bold (if memory-p nil bold)))
     (multiple-value-bind (width height)
         (charms:window-dimensions charms:*standard-window*)
       (let ((x (+ (- x *player-x*) (floor width 2)))
