@@ -89,17 +89,17 @@
                                                                      "+")
                                                         :sdl2-ffi))))
                (or true-key (error "unknown key: ~a" key)))))
-    (loop for (state input) on input by #'cddr do
-      (loop for (action keys) in input
-            do (unless (gethash state key-action-map)
-                 (setf (gethash state key-action-map) (make-hash-table)))
-               (if (listp keys)
-                   (loop for key in keys
-                         do (setf (@ key-action-map state (true-key key))
-                                  (make-keyword action)))
-                   (setf (@ key-action-map state (true-key keys))
-                         (make-keyword action))))))
-  key-action-map))
+      (loop for (state input) on input by #'cddr do
+        (loop for (action keys) in input
+              do (unless (gethash state key-action-map)
+                   (setf (gethash state key-action-map) (make-hash-table)))
+                 (if (listp keys)
+                     (loop for key in keys
+                           do (setf (@ key-action-map state (true-key key))
+                                    (make-keyword action)))
+                     (setf (@ key-action-map state (true-key keys))
+                           (make-keyword action))))))
+    key-action-map))
 
 (defun load-keys (&optional (file-name "keys.lisp"))
   (with-standard-io-syntax
@@ -109,8 +109,8 @@
 (defun draw-play (data width height)
   (declare (ignorable width height))
   (destructuring-bind (&key ((:player (&whole player
-                                              &key ((:attributes player-attributes))
-                                              &allow-other-keys)))
+                                       &key ((:attributes player-attributes))
+                                       &allow-other-keys)))
                          objects log turn)
       data
     (let ((*player-x* (getf player :x))
@@ -133,7 +133,7 @@
                                 &key
                                   ((:attributes (&key charges max-charges equipped)))
                                   ((:display-name name))
-                                  &allow-other-keys)
+                                &allow-other-keys)
                item
              )))
 
