@@ -78,13 +78,20 @@
        (or (@ *key-action-map* *state* scancode)
            (and (eql *state* :inventory) (code-char scancode)))))
 
+(defun translate-key (key)
+  (str:string-case key
+    ("." "PERIOD")
+    ("" "ESCAPE")
+    (otherwise key)))
+
 (defun true-key (key)
   (let* ((true-key (symbol-value (find-symbol (concatenate 'string
                                                            "+SDL-SCANCODE-"
-                                                           (etypecase key
-                                                             (symbol (symbol-name key))
-                                                             (character (string-upcase key))
-                                                             (cons (symbol-name (second key))))
+                                                           (translate-key
+                                                            (etypecase key
+                                                              (symbol (symbol-name key))
+                                                              (character (string-upcase key))
+                                                              (cons (symbol-name (second key)))))
                                                            "+")
                                               :sdl2-ffi)))
          (true-key (cond

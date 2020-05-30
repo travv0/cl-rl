@@ -14,10 +14,10 @@
         (run-up-right #\U)
         (run-down-left #\B)
         (run-down-right #\N)
-        (wait period)
+        (wait #\.)
         (reveal-map #\R)
         (reset #\r)
-        (quit escape)
+        (quit #\Esc)
         (open-inventory #\i))
 
- :inventory ((close-inventory escape)))
+ :inventory ((close-inventory #\Esc)))

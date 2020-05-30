@@ -10,6 +10,7 @@
                  #:sdl2-image
                  #:alexandria
                  #:serapeum
+                 #:str
                  #:net.mfiano.lisp.dungen
                  #:dynamic-mixins
                  #:travv0.utils
