@@ -183,7 +183,7 @@
               (ensure-mix *player* 'running)
               (setf (dx *player*) 1 (dy *player*) 1)
               t)
-             (:reveal-map (mapc #'add-memory (reverse *game-objects*)) nil)
+             (:reveal-map (mapc #'add-memory *game-objects*) nil)
              (:open-inventory (setf *state* :inventory) nil)
              (:reset (initialize) nil)
              (:quit (error 'quit-condition))))

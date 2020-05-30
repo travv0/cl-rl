@@ -6,14 +6,10 @@
         (move-up-right #\u)
         (move-down-left #\b)
         (move-down-right #\n)
-        (run-up (;; sup
-                 #\K))
-        (run-down (;; sdown
-                   #\J))
-        (run-right (;; sright
-                    #\L))
-        (run-left (;; sleft
-                   #\H))
+        (run-up ((shift up) #\K))
+        (run-down ((shift down) #\J))
+        (run-right ((shift right) #\L))
+        (run-left ((shift left) #\H))
         (run-up-left #\Y)
         (run-up-right #\U)
         (run-down-left #\B)

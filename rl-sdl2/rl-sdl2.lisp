@@ -73,32 +73,39 @@
 
 (defvar *state* :play)
 
-(defun char-to-action (char)
-  (and char
-       (or (@ *key-action-map* *state* char)
-           (and (eql *state* :inventory) (code-char char)))))
+(defun scancode-to-action (scancode)
+  (and scancode
+       (or (@ *key-action-map* *state* scancode)
+           (and (eql *state* :inventory) (code-char scancode)))))
+
+(defun true-key (key)
+  (let* ((true-key (symbol-value (find-symbol (concatenate 'string
+                                                           "+SDL-SCANCODE-"
+                                                           (etypecase key
+                                                             (symbol (symbol-name key))
+                                                             (character (string-upcase key))
+                                                             (cons (symbol-name (second key))))
+                                                           "+")
+                                              :sdl2-ffi)))
+         (true-key (cond
+                     ((typep key 'cons) (list (make-keyword (first key)) true-key))
+                     ((and (typep key 'character) (upper-case-p key))
+                      (list :shift true-key))
+                     (t true-key))))
+    (or true-key (error "unknown key: ~s" key))))
 
 (defun map-keys (input)
   (let ((key-action-map (make-hash-table)))
-    (flet ((true-key (key)
-             (let ((true-key (symbol-value (find-symbol (concatenate 'string
-                                                                     "+SDL-SCANCODE-"
-                                                                     (if (symbolp key)
-                                                                         (symbol-name key)
-                                                                         (string-upcase key))
-                                                                     "+")
-                                                        :sdl2-ffi))))
-               (or true-key (error "unknown key: ~a" key)))))
-      (loop for (state input) on input by #'cddr do
-        (loop for (action keys) in input
-              do (unless (gethash state key-action-map)
-                   (setf (gethash state key-action-map) (make-hash-table)))
-                 (if (listp keys)
-                     (loop for key in keys
-                           do (setf (@ key-action-map state (true-key key))
-                                    (make-keyword action)))
-                     (setf (@ key-action-map state (true-key keys))
-                           (make-keyword action))))))
+    (loop for (state input) on input by #'cddr do
+      (loop for (action keys) in input
+            do (unless (gethash state key-action-map)
+                 (setf (gethash state key-action-map) (make-hash-table :test 'equal)))
+               (if (listp keys)
+                   (loop for key in keys
+                         do (setf (@ key-action-map state (true-key key))
+                                  (make-keyword action)))
+                   (setf (@ key-action-map state (true-key keys))
+                         (make-keyword action)))))
     key-action-map))
 
 (defun load-keys (&optional (file-name "keys.lisp"))
@@ -137,16 +144,14 @@
                item
              )))
 
-(defun update-and-display (char)
+(defun update-and-display (scancode)
   (multiple-value-bind (width height)
       (sdl2:get-window-size *window*)
-    (destructuring-bind (state data) (rl:tick (char-to-action char))
+    (destructuring-bind (state data) (rl:tick (scancode-to-action scancode))
       (setf *state* state)
       (ecase state
         (:play (draw-play data width height))
-        (:inventory (draw-inventory data width height)))))
-
-  )
+        (:inventory (draw-inventory data width height))))))
 
 (defun dev ()
   (bt:make-thread (lambda () (main))
@@ -163,13 +168,23 @@
             (rl:initialize)
             (update-and-display nil)
 
-            (sdl2:with-event-loop (:method :poll)
-              (:keydown (:keysym keysym)
-                        (update-and-display (sdl2:scancode-value keysym)))
+            (let ((shift-held nil))
+              (sdl2:with-event-loop (:method :poll)
+                (:keydown (:keysym keysym)
+                          (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-lshift)
+                            (setf shift-held t))
+                          (let ((scancode (if shift-held
+                                              (list :shift (sdl2:scancode-value keysym))
+                                              (sdl2:scancode-value keysym))))
+                            (update-and-display scancode)))
 
-              (:quit () t)
+                (:keyup (:keysym keysym)
+                        (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-lshift)
+                          (setf shift-held nil)))
 
-              (:idle ()
-                     (sdl2:gl-swap-window *window*))))))
+                (:quit () t)
+
+                (:idle ()
+                       (sdl2:gl-swap-window *window*)))))))
     (rl::quit-condition ()
       (sdl2-image:quit))))
