@@ -24,8 +24,10 @@
     `(progn ,@result)))
 
 (defun display-each (objects)
+  (sdl2:render-clear *renderer*)
   (dolist (obj objects)
-    (display obj)))
+    (display obj))
+  (sdl2:render-present *renderer*))
 
 (defun get-image (name attributes)
   (case name
@@ -44,7 +46,8 @@
      #+release (values #\? :white :black nil))))
 
 (desfun display ((&key name x y attributes) &optional memory-p)
-  (draw x y (get-image name attributes) memory-p))
+  (when-let ((image (get-image name attributes)))
+    (draw x y image memory-p)))
 
 (defvar *player-x*)
 (defvar *player-y*)
@@ -60,7 +63,11 @@
           (y (+ (- (* y *tile-size*) (* *player-y* *tile-size*))
                 (floor height 2))))
       (when (and (<= 0 x (1- width)) (<= 0 y (1- height)))
-        (sdl2:create-texture-from-surface *renderer* image)))))
+        (if memory-p
+            (sdl2:set-texture-color-mod image 64 64 64)
+            (sdl2:set-texture-color-mod image 255 255 255))
+        (sdl2:render-copy *renderer* image
+                          :dest-rect (sdl2:make-rect x y 16 16))))))
 
 (defvar *key-action-map* (make-hash-table))
 
@@ -69,28 +76,30 @@
 (defun char-to-action (char)
   (and char
        (or (@ *key-action-map* *state* char)
-           (@ *key-action-map* *state* (code-char char))
            (and (eql *state* :inventory) (code-char char)))))
 
 (defun map-keys (input)
   (let ((key-action-map (make-hash-table)))
     (flet ((true-key (key)
-             (let ((true-key (if (symbolp key)
-                                 (symbol-value (find-symbol (concatenate 'string "+SDL-SCANCODE-" (symbol-name key) "+")
-                                                            :sdl2-ffi))
-                                 key)))
+             (let ((true-key (symbol-value (find-symbol (concatenate 'string
+                                                                     "+SDL-SCANCODE-"
+                                                                     (if (symbolp key)
+                                                                         (symbol-name key)
+                                                                         (string-upcase key))
+                                                                     "+")
+                                                        :sdl2-ffi))))
                (or true-key (error "unknown key: ~a" key)))))
-      (loop for (state input) on input by #'cddr do
-        (loop for (action keys) in input
-              do (unless (gethash state key-action-map)
-                   (setf (gethash state key-action-map) (make-hash-table)))
-                 (if (listp keys)
-                     (loop for key in keys
-                           do (setf (@ key-action-map state (true-key key))
-                                    (make-keyword action)))
-                     (setf (@ key-action-map state (true-key keys))
-                           (make-keyword action))))))
-    key-action-map))
+    (loop for (state input) on input by #'cddr do
+      (loop for (action keys) in input
+            do (unless (gethash state key-action-map)
+                 (setf (gethash state key-action-map) (make-hash-table)))
+               (if (listp keys)
+                   (loop for key in keys
+                         do (setf (@ key-action-map state (true-key key))
+                                  (make-keyword action)))
+                   (setf (@ key-action-map state (true-key keys))
+                         (make-keyword action))))))
+  key-action-map))
 
 (defun load-keys (&optional (file-name "keys.lisp"))
   (with-standard-io-syntax
@@ -145,9 +154,9 @@
 
 (defun main ()
   (load-keys)
-  (sdl2-image:init (list sdl2-ffi:+img-init-png+))
+  (sdl2-image:init '(:png))
   (handler-case
-      (sdl2:with-init ()
+      (sdl2:with-init (:everything)
         (sdl2:with-window (*window* :flags '(:shown))
           (sdl2:with-renderer (*renderer* *window* :flags '(:accelerated))
             (init-textures)
@@ -157,6 +166,8 @@
             (sdl2:with-event-loop (:method :poll)
               (:keydown (:keysym keysym)
                         (update-and-display (sdl2:scancode-value keysym)))
+
+              (:quit () t)
 
               (:idle ()
                      (sdl2:gl-swap-window *window*))))))
