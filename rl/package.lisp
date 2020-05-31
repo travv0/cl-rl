@@ -9,6 +9,7 @@
                 #:if-let
                 #:curry
                 #:rcurry
+                #:compose
                 #:removef
                 #:make-keyword
                 #:lastcar
@@ -18,7 +19,9 @@
                 #:do-hash-table)
   (:export #:tick
            #:initialize
-           #:error-condition))
+           #:error-condition
+           #:visible-keyword
+           #:states))
 
 (defpackage #:astar
   (:use #:cl)

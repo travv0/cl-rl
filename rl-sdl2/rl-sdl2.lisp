@@ -30,20 +30,16 @@
   (sdl2:render-present *renderer*))
 
 (defun get-image (name attributes)
-  (case name
+  (ecase-of rl:visible-keyword name
     (:player *player-image*)
     (:cell *floor-image*)
     (:wall *tile-image*)
     (:door (unless (getf attributes :open) *bug-image*))
-    ((:goblin :goblin-fighter :rat :warrior) *worm-image*)
-    ((:dagger :sword :potion :kite-shield) *bug-image*)
+    ((:goblin :goblin-fighter :rat :warrior :enemy) *worm-image*)
+    ((:dagger :sword :health-potion :kite-shield :shield :weapon :item) *bug-image*)
     (:memory
      (display (getf attributes :memory-of) t)
-     (return-from get-image))
-    ((nil) (return-from get-image))
-    (t
-     #-release (error "~s fell through case expression" name)
-     #+release (values #\? :white :black nil))))
+     (return-from get-image))))
 
 (desfun display ((&key name x y attributes) &optional memory-p)
   (when-let ((image (get-image name attributes)))
@@ -79,19 +75,19 @@
            (and (eql *state* :inventory) (code-char scancode)))))
 
 (defun translate-key (key)
-  (str:string-case key
-    ("." "PERIOD")
-    ("" "ESCAPE")
+  (case key
+    (#\. 'period)
+    ((#\Esc esc) 'escape)
     (otherwise key)))
 
 (defun true-key (key)
   (let* ((true-key (symbol-value (find-symbol (concatenate 'string
                                                            "+SDL-SCANCODE-"
-                                                           (translate-key
-                                                            (etypecase key
-                                                              (symbol (symbol-name key))
-                                                              (character (string-upcase key))
-                                                              (cons (symbol-name (second key)))))
+                                                           (let ((key (translate-key key)))
+                                                             (etypecase key
+                                                               (symbol (symbol-name key))
+                                                               (character (string-upcase key))
+                                                               (cons (symbol-name (second key)))))
                                                            "+")
                                               :sdl2-ffi)))
          (true-key (cond
@@ -156,7 +152,7 @@
       (sdl2:get-window-size *window*)
     (destructuring-bind (state data) (rl:tick (scancode-to-action scancode))
       (setf *state* state)
-      (ecase state
+      (ecase-of rl:states state
         (:play (draw-play data width height))
         (:inventory (draw-inventory data width height))))))
 

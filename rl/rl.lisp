@@ -220,3 +220,22 @@
           while (plusp (cooldown *player*))))
 
   (list *state* (dump-state)))
+
+(defun get-all-subclasses (class)
+  (let* ((class (etypecase class
+                  (symbol (find-class class))
+                  (class class)))
+         (subclasses (c2mop:class-direct-subclasses class)))
+    (when subclasses
+      (remove-if (op (typep _ 'mixin-class))
+                 (append subclasses (mapcan #'get-all-subclasses subclasses))))))
+
+(defun get-visible-keywords ()
+  (mapcar (compose #'make-keyword #'class-name)
+          (get-all-subclasses 'visible)))
+
+(deftype visible-keyword ()
+  `(member ,@(get-visible-keywords)))
+
+(deftype states ()
+  `(member :play :inventory))

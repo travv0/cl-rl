@@ -4,4 +4,6 @@
   (:use #:cl #:alexandria)
   (:import-from #:travv0.utils
                 #:desfun)
-  (:import-from #:serapeum #:@))
+  (:import-from #:serapeum
+                #:@
+                #:ecase-of))
