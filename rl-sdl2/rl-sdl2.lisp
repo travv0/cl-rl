@@ -48,6 +48,7 @@
 
 (defvar *window*)
 (defvar *renderer*)
+(defvar *font*)
 
 (defun draw (x y image &optional memory-p)
   (multiple-value-bind (width height)
@@ -137,6 +138,17 @@
         (sdl2:render-fill-rect *renderer* current-rect)
         (sdl2:set-render-draw-color *renderer* old-r old-g old-b old-a)))))
 
+(defun display-turn-number (turn width height)
+  (declare (ignorable width height))
+  (let* ((surface (sdl2-ttf:render-text-solid *font* (format nil "turn: ~d" turn)
+                                              255 255 255 255))
+         (texture (sdl2:create-texture-from-surface *renderer* surface)))
+    (sdl2:render-copy *renderer* texture
+                      :source-rect (cffi:null-pointer)
+                      :dest-rect (sdl2:make-rect (- width (sdl2:texture-width texture) 5)
+                                                 5
+                                                 (sdl2:texture-width texture)
+                                                 (sdl2:texture-height texture)))))
 
 (defun draw-play (data width height)
   (declare (ignorable width height))
@@ -147,7 +159,7 @@
       data
     (let ((*player-x* (getf player :x))
           (*player-y* (getf player :y)))
-  (sdl2:render-clear *renderer*)
+      (sdl2:render-clear *renderer*)
       (display-each objects)
       (display-health (getf player-attributes :health)
                       (getf player-attributes :max-health)
@@ -156,6 +168,7 @@
                        (getf player-attributes :max-stamina)
                        (getf player-attributes :previous-stamina))
       ;; (display-log 5 log)
+      (display-turn-number turn width height)
       (sdl2:render-present *renderer*))))
 
 (defun draw-inventory (data width height)
@@ -183,34 +196,43 @@
   (bt:make-thread (lambda () (main))
                   :name "game thread"))
 
+(defmacro with-font ((var font-path point-size) &body body)
+  `(let ((,var (sdl2-ttf:open-font ,font-path ,point-size)))
+     (unwind-protect (progn ,@body)
+       (sdl2-ttf:close-font ,var))))
+
 (defun main ()
   (load-keys)
-  (sdl2-image:init '(:png))
   (sdl2:with-init (:everything)
-    (sdl2:with-window (*window* :flags '(:shown))
-      (sdl2:with-renderer (*renderer* *window* :flags '(:accelerated))
-        (init-textures)
-        (rl:initialize)
-        (update-and-display nil)
+    (sdl2-image:init '(:png))
+    (sdl2-ttf:init)
+    (unwind-protect
+         (sdl2:with-window (*window* :flags '(:shown))
+           (sdl2:with-renderer (*renderer* *window* :flags '(:accelerated))
+             (handler-case
+                 (with-font (*font* "rl-sdl2/arial.ttf" 18)
+                   (init-textures)
+                   (rl:initialize)
+                   (update-and-display nil)
 
-        (handler-case
-            (let ((shift-held nil))
-              (sdl2:with-event-loop (:method :poll)
-                (:keydown (:keysym keysym)
-                          (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-lshift)
-                            (setf shift-held t))
-                          (let ((scancode (if shift-held
-                                              (list :shift (sdl2:scancode-value keysym))
-                                              (sdl2:scancode-value keysym))))
-                            (update-and-display scancode)))
+                   (let ((shift-held nil))
+                     (sdl2:with-event-loop (:method :poll)
+                       (:keydown (:keysym keysym)
+                                 (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-lshift)
+                                   (setf shift-held t))
+                                 (let ((scancode (if shift-held
+                                                     (list :shift (sdl2:scancode-value keysym))
+                                                     (sdl2:scancode-value keysym))))
+                                   (update-and-display scancode)))
 
-                (:keyup (:keysym keysym)
-                        (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-lshift)
-                          (setf shift-held nil)))
+                       (:keyup (:keysym keysym)
+                               (when (sdl2:scancode= (sdl2:scancode-value keysym) :scancode-lshift)
+                                 (setf shift-held nil)))
 
-                (:quit () t)
+                       (:quit () t)
 
-                (:idle ()
-                       (sdl2:gl-swap-window *window*))))
-          (rl::quit-condition ()
-      (sdl2-image:quit)))))))
+                       (:idle ()
+                              (sdl2:gl-swap-window *window*)))))
+               (rl::quit-condition ()))))
+      (sdl2-ttf:quit)
+      (sdl2-image:quit))))
