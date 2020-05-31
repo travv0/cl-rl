@@ -33,8 +33,10 @@
     (:cell *floor-image*)
     (:wall *tile-image*)
     (:door (unless (getf attributes :open) *bug-image*))
-    ((:goblin :goblin-fighter :rat :warrior :enemy) *worm-image*)
-    ((:dagger :sword :health-potion :kite-shield :shield :weapon :item) *bug-image*)
+    ((:goblin :goblin-fighter :rat :warrior) *worm-image*)
+    ((:dagger :sword :health-potion :kite-shield) *bug-image*)
+    ((:item :weapon :shield :enemy)
+     (error "~a should be inherited from and cannot be drawn" name))
     (:memory
      (display (getf attributes :memory-of) t)
      (return-from get-image))))
