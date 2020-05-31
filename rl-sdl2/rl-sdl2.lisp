@@ -24,10 +24,8 @@
     `(progn ,@result)))
 
 (defun display-each (objects)
-  (sdl2:render-clear *renderer*)
   (dolist (obj objects)
-    (display obj))
-  (sdl2:render-present *renderer*))
+    (display obj)))
 
 (defun get-image (name attributes)
   (ecase-of rl:visible-keyword name
@@ -116,6 +114,30 @@
     (uiop:with-input-file (file file-name)
       (setf *key-action-map* (map-keys (read file))))))
 
+(defun display-health (health max-health previous-health)
+  (display-bar 5 5 max-health 20 health max-health previous-health '(255 0 0) '(192 192 192)))
+
+(defun display-stamina (stamina max-stamina previous-stamina)
+  (display-bar 5 30 max-stamina 20 stamina max-stamina previous-stamina '(0 255 0) '(192 192 192)))
+
+(defun display-bar (x y w h amount max-amount previous-amount fg-rgb bg-rgb
+                    &optional (diff-rgb '(255 255 0)))
+  (destructuring-bind ((fg-r fg-g fg-b) (bg-r bg-g bg-b) (diff-r diff-g diff-b))
+      (list fg-rgb bg-rgb diff-rgb)
+    (multiple-value-bind (old-r old-g old-b old-a)
+        (sdl2:get-render-draw-color *renderer*)
+      (let ((bg-rect (sdl2:make-rect x y w h))
+            (diff-rect (sdl2:make-rect x y (round (* w (/ previous-amount max-amount))) h))
+            (current-rect (sdl2:make-rect x y (round (* w (/ amount max-amount))) h)))
+        (sdl2:set-render-draw-color *renderer* bg-r bg-g bg-b 1)
+        (sdl2:render-fill-rect *renderer* bg-rect)
+        (sdl2:set-render-draw-color *renderer* diff-r diff-g diff-b 1)
+        (sdl2:render-fill-rect *renderer* diff-rect)
+        (sdl2:set-render-draw-color *renderer* fg-r fg-g fg-b 1)
+        (sdl2:render-fill-rect *renderer* current-rect)
+        (sdl2:set-render-draw-color *renderer* old-r old-g old-b old-a)))))
+
+
 (defun draw-play (data width height)
   (declare (ignorable width height))
   (destructuring-bind (&key ((:player (&whole player
@@ -125,15 +147,16 @@
       data
     (let ((*player-x* (getf player :x))
           (*player-y* (getf player :y)))
+  (sdl2:render-clear *renderer*)
       (display-each objects)
-      ;; (display-health (getf player-attributes :health)
-      ;;                 (getf player-attributes :max-health)
-      ;;                 (getf player-attributes :previous-health))
-      ;; (display-stamina (getf player-attributes :stamina)
-      ;;                  (getf player-attributes :max-stamina)
-      ;;                  (getf player-attributes :previous-stamina))
+      (display-health (getf player-attributes :health)
+                      (getf player-attributes :max-health)
+                      (getf player-attributes :previous-health))
+      (display-stamina (getf player-attributes :stamina)
+                       (getf player-attributes :max-stamina)
+                       (getf player-attributes :previous-stamina))
       ;; (display-log 5 log)
-      )))
+      (sdl2:render-present *renderer*))))
 
 (defun draw-inventory (data width height)
   (declare (ignorable width height))
