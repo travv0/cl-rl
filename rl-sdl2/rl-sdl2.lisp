@@ -142,8 +142,8 @@
 
 (defun display-turn-number (turn width height)
   (declare (ignorable width height))
-  (let* ((surface (sdl2-ttf:render-text-solid *font* (format nil "turn: ~d" turn)
-                                              255 255 255 255))
+  (let* ((surface (sdl2-ttf:render-text-blended *font* (format nil "turn: ~d" turn)
+                                                255 255 255 255))
          (texture (sdl2:create-texture-from-surface *renderer* surface)))
     (sdl2:render-copy *renderer* texture
                       :source-rect (cffi:null-pointer)
@@ -212,7 +212,7 @@
          (sdl2:with-window (*window* :flags '(:shown))
            (sdl2:with-renderer (*renderer* *window* :flags '(:accelerated))
              (handler-case
-                 (with-font (*font* "rl-sdl2/arial.ttf" 18)
+                 (with-font (*font* "rl-sdl2/EBGaramond-Medium.ttf" 18)
                    (init-textures)
                    (rl:initialize)
                    (update-and-display nil)
