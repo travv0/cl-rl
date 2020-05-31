@@ -62,7 +62,7 @@
                 (floor width 2)))
           (y (+ (- (* y *tile-size*) (* *player-y* *tile-size*))
                 (floor height 2))))
-      (when (and (<= 0 x (1- width)) (<= 0 y (1- height)))
+      (when (and (<= (- *tile-size*) x (1- width)) (<= (- *tile-size*) y (1- height)))
         (if memory-p
             (sdl2:set-texture-color-mod image 64 64 64)
             (sdl2:set-texture-color-mod image 255 255 255))
@@ -160,14 +160,14 @@
 (defun main ()
   (load-keys)
   (sdl2-image:init '(:png))
-  (handler-case
-      (sdl2:with-init (:everything)
-        (sdl2:with-window (*window* :flags '(:shown))
-          (sdl2:with-renderer (*renderer* *window* :flags '(:accelerated))
-            (init-textures)
-            (rl:initialize)
-            (update-and-display nil)
+  (sdl2:with-init (:everything)
+    (sdl2:with-window (*window* :flags '(:shown))
+      (sdl2:with-renderer (*renderer* *window* :flags '(:accelerated))
+        (init-textures)
+        (rl:initialize)
+        (update-and-display nil)
 
+        (handler-case
             (let ((shift-held nil))
               (sdl2:with-event-loop (:method :poll)
                 (:keydown (:keysym keysym)
@@ -185,6 +185,6 @@
                 (:quit () t)
 
                 (:idle ()
-                       (sdl2:gl-swap-window *window*)))))))
-    (rl::quit-condition ()
-      (sdl2-image:quit))))
+                       (sdl2:gl-swap-window *window*))))
+          (rl::quit-condition ()
+      (sdl2-image:quit)))))))
