@@ -67,7 +67,22 @@
 (defun scancode-to-action (scancode)
   (and scancode
        (or (@ *key-action-map* *state* scancode)
-           (and (eql *state* :inventory) (code-char scancode)))))
+           (and (eql *state* :inventory) (scancode-char scancode)))))
+
+(defparameter *letters*
+  (loop for c from (char-code #\a) to (char-code #\z)
+        collecting (code-char c)))
+
+(defun scancode-char (scancode)
+  (let* ((upcase-p (and (typep scancode 'cons)
+                        (eq (first scancode) :shift)))
+         (scancode (ctypecase scancode
+                     (cons (second scancode))
+                     (t scancode)))
+         (character (nth (- scancode 4) *letters*)))
+    (if (and upcase-p character)
+        (char-upcase character)
+        character)))
 
 (defun translate-key (key)
   (case key
