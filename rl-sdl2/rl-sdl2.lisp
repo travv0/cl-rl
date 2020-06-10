@@ -174,7 +174,6 @@
       data
     (let ((*player-x* (getf player :x))
           (*player-y* (getf player :y)))
-      (sdl2:render-clear *renderer*)
       (display-each objects)
       (display-health (getf player-attributes :health)
                       (getf player-attributes :max-health)
@@ -183,8 +182,7 @@
                        (getf player-attributes :max-stamina)
                        (getf player-attributes :previous-stamina))
       (display-log 5 log width height)
-      (display-turn-number turn width height)
-      (sdl2:render-present *renderer*))))
+      (display-turn-number turn width height))))
 
 (defun draw-inventory (data width height)
   (declare (ignorable width height))
@@ -196,16 +194,31 @@
                                   ((:display-name name))
                                 &allow-other-keys)
                item
-             )))
+             (let* ((surface (sdl2-ttf:render-text-blended *font* (format nil "~c. ~a ~@[~a~]~@[/~a~]~@[(equipped: ~a)~]"
+                                                                          char
+                                                                          name
+                                                                          charges
+                                                                          max-charges
+                                                                          equipped)
+                                                           255 255 255 255))
+                    (texture (sdl2:create-texture-from-surface *renderer* surface)))
+               (sdl2:render-copy *renderer* texture
+                                 :source-rect (cffi:null-pointer)
+                                 :dest-rect (sdl2:make-rect 5
+                                                            (* (+ (sdl2:texture-height texture) 5) i)
+                                                            (sdl2:texture-width texture)
+                                                            (sdl2:texture-height texture)))))))
 
 (defun update-and-display (scancode)
   (multiple-value-bind (width height)
       (sdl2:get-window-size *window*)
     (destructuring-bind (state data) (rl:tick (scancode-to-action scancode))
       (setf *state* state)
+      (sdl2:render-clear *renderer*)
       (ecase-of rl:states state
         (:play (draw-play data width height))
-        (:inventory (draw-inventory data width height))))))
+        (:inventory (draw-inventory data width height)))
+      (sdl2:render-present *renderer*))))
 
 (defun dev ()
   (bt:make-thread (lambda () (main))
