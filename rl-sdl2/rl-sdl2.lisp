@@ -152,6 +152,19 @@
                                                  (sdl2:texture-width texture)
                                                  (sdl2:texture-height texture)))))
 
+(defun display-log (count log width height)
+  (declare (ignorable width height))
+  (loop for entry in log
+        for i from 1 to count
+        do (let* ((surface (sdl2-ttf:render-text-blended *font* entry 255 255 255 255))
+                  (texture (sdl2:create-texture-from-surface *renderer* surface)))
+             (sdl2:render-copy *renderer* texture
+                               :source-rect (cffi:null-pointer)
+                               :dest-rect (sdl2:make-rect 5
+                                                          (- height (* (+ (sdl2:texture-height texture) 5) i))
+                                                          (sdl2:texture-width texture)
+                                                          (sdl2:texture-height texture))))))
+
 (defun draw-play (data width height)
   (declare (ignorable width height))
   (destructuring-bind (&key ((:player (&whole player
@@ -169,7 +182,7 @@
       (display-stamina (getf player-attributes :stamina)
                        (getf player-attributes :max-stamina)
                        (getf player-attributes :previous-stamina))
-      ;; (display-log 5 log)
+      (display-log 5 log width height)
       (display-turn-number turn width height)
       (sdl2:render-present *renderer*))))
 
