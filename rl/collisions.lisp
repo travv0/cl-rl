@@ -96,7 +96,6 @@
         for objs = (get-objects-at-pos step) do
           (loop for other-obj in objs
                 when (and (not (typep other-obj 'cell))
-                          (not (typep other-obj 'memory))
                           (same step other-obj))
                   do (push (cons other-obj previous-step) collisions)
                 do (setf previous-step step))

@@ -22,20 +22,16 @@
         (block pos-loop
           (loop with hit-opaque = nil
                 for pos in (get-line player (pos x y))
-                do (clear-memories pos)
-                   (loop for obj in (get-objects-at-pos pos)
+                do (loop for obj in (get-objects-at-pos pos)
                          do (ensure-mix obj 'can-see)
                             (when (typep obj 'opaque)
                               (setf hit-opaque t)))
-                   (loop for obj in (get-visible-objects-at-pos pos)
-                         unless (or (typep obj 'memory) (typep obj 'moveable))
-                           do (add-memory obj))
                    (when hit-opaque
                      (return-from pos-loop)))))))
   (with-accessors ((x x) (y y)) player
     (flet ((visible-pos (check-x check-y)
              (and (not (typep (get-visible-object-at-pos (pos check-x check-y)) 'opaque))
-                  (some (op (and (typep _1 'can-see) (not (typep _1 'memory))))
+                  (some (op (typep _1 'can-see))
                         (get-objects-at-pos (pos check-x check-y))))))
       (loop for obj in *game-objects*
             when (and (typep obj 'opaque) (not (typep obj 'can-see)))
@@ -55,5 +51,4 @@
                                 (<= y (y obj))
                                 (or (visible-pos (1+ (x obj)) (y obj))
                                     (visible-pos (x obj) (1- (y obj))))))
-                   (add-memory obj)
                    (ensure-mix obj 'can-see))))))

@@ -52,11 +52,6 @@
                                       (list :open (not (typep door 'solid)))
                                       attributes)))
 
-(defmethod dump-object ((memory memory) &optional attributes)
-  (call-next-method memory (concatenate 'list
-                                        (list :memory-of (memory-of memory))
-                                        attributes)))
-
 (defmethod dump-object ((player player) &optional attributes)
   (call-next-method player (concatenate 'list
                                         (list :health (health *player*)
@@ -183,7 +178,6 @@
               (ensure-mix *player* 'running)
               (setf (dx *player*) 1 (dy *player*) 1)
               t)
-             (:reveal-map (mapc #'add-memory *game-objects*) nil)
              (:open-inventory (setf *state* :inventory) nil)
              (:reset (initialize) nil)
              (:quit (error 'quit-condition))))

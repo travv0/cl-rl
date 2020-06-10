@@ -36,14 +36,11 @@
     ((:goblin :goblin-fighter :rat :warrior) *worm-image*)
     ((:dagger :sword :health-potion :kite-shield) *bug-image*)
     ((:item :weapon :shield :enemy)
-     (error "~a should be inherited from and cannot be drawn" name))
-    (:memory
-     (display (getf attributes :memory-of) t)
-     (return-from get-image))))
+     (error "~a should be inherited from and cannot be drawn" name))))
 
-(desfun display ((&key name x y attributes) &optional memory-p)
+(desfun display ((&key name x y attributes))
   (when-let ((image (get-image name attributes)))
-    (draw x y image memory-p)))
+    (draw x y image)))
 
 (defvar *player-x*)
 (defvar *player-y*)
@@ -52,7 +49,7 @@
 (defvar *renderer*)
 (defvar *font*)
 
-(defun draw (x y image &optional memory-p)
+(defun draw (x y image)
   (multiple-value-bind (width height)
       (sdl2:get-window-size *window*)
     (let ((x (+ (- (* x *tile-size*) (* *player-x* *tile-size*))
@@ -60,9 +57,6 @@
           (y (+ (- (* y *tile-size*) (* *player-y* *tile-size*))
                 (floor height 2))))
       (when (and (<= (- *tile-size*) x (1- width)) (<= (- *tile-size*) y (1- height)))
-        (if memory-p
-            (sdl2:set-texture-color-mod image 64 64 64)
-            (sdl2:set-texture-color-mod image 255 255 255))
         (sdl2:render-copy *renderer* image
                           :dest-rect (sdl2:make-rect x y *tile-size* *tile-size*))))))
 

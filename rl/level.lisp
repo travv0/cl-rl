@@ -3,11 +3,6 @@
 (defvar *pos-cache*)
 (defvar *game-objects*)
 
-(defclass memory (visible)
-  ((%memory-of :initarg :memory-of
-               :initform (error "memory-of must be specified")
-               :reader memory-of)))
-
 (defclass wall (visible solid opaque)
   ())
 
@@ -17,21 +12,8 @@
 (defclass cell (visible)
   ())
 
-(defun clear-memories (pos)
-  (setf (aref *pos-cache* (x pos) (y pos))
-        (remove-if (op (typep _ 'memory))
-                   (aref *pos-cache* (x pos) (y pos)))))
-
-(defun add-memory (obj)
-  (setf (aref *pos-cache* (x obj) (y obj))
-        (append (aref *pos-cache* (x obj) (y obj))
-                (list (make-instance 'memory
-                                     :memory-of (dump-object obj)
-                                     :x (x obj)
-                                     :y (y obj))))))
-
 (defun should-display (obj)
-  (or (typep obj 'can-see) (typep obj 'memory)))
+  (typep obj 'can-see))
 
 (defparameter *stage-width* 79)
 (defparameter *stage-height* 79)
