@@ -149,32 +149,34 @@
         (sdl2:render-fill-rect *renderer* current-rect)
         (sdl2:set-render-draw-color *renderer* old-r old-g old-b old-a)))))
 
+(defmacro with-text-blended ((texture text &key font (r 255) (g 255) (b 255) (a 255)) &body body)
+  (with-gensyms (surface)
+    `(let* ((,surface (sdl2-ttf:render-text-blended (or ,font *font*) ,text ,r ,g ,b ,a))
+            (,texture (sdl2:create-texture-from-surface *renderer* ,surface)))
+       (unwind-protect (progn ,@body)
+         (sdl2:destroy-texture ,texture)))))
+
 (defun display-turn-number (turn width height)
   (declare (ignorable width height))
-  (let* ((surface (sdl2-ttf:render-text-blended *font* (format nil "turn: ~d" turn)
-                                                255 255 255 255))
-         (texture (sdl2:create-texture-from-surface *renderer* surface)))
+  (with-text-blended (texture (format nil "turn: ~d" turn))
     (sdl2:render-copy *renderer* texture
                       :source-rect (cffi:null-pointer)
                       :dest-rect (sdl2:make-rect (- width (sdl2:texture-width texture) 5)
                                                  5
                                                  (sdl2:texture-width texture)
-                                                 (sdl2:texture-height texture)))
-    (sdl2:destroy-texture texture)))
+                                                 (sdl2:texture-height texture)))))
 
 (defun display-log (count log width height)
   (declare (ignorable width height))
   (loop for entry in log
         for i from 1 to count
-        do (let* ((surface (sdl2-ttf:render-text-blended *font* entry 255 255 255 255))
-                  (texture (sdl2:create-texture-from-surface *renderer* surface)))
+        do (with-text-blended (texture entry)
              (sdl2:render-copy *renderer* texture
                                :source-rect (cffi:null-pointer)
                                :dest-rect (sdl2:make-rect 5
                                                           (- height (* (+ (sdl2:texture-height texture) 5) i))
                                                           (sdl2:texture-width texture)
-                                                          (sdl2:texture-height texture)))
-             (sdl2:destroy-texture texture))))
+                                                          (sdl2:texture-height texture))))))
 
 (defun draw-play (data width height)
   (declare (ignorable width height))
