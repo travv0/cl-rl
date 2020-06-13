@@ -42,6 +42,13 @@
   (when-let ((image (get-image name attributes)))
     (draw x y image)))
 
+(defmacro with-text-blended ((texture text &key font (r 255) (g 255) (b 255) (a 255)) &body body)
+  (with-gensyms (surface)
+    `(let* ((,surface (sdl2-ttf:render-text-blended (or ,font *font*) ,text ,r ,g ,b ,a))
+            (,texture (sdl2:create-texture-from-surface *renderer* ,surface)))
+       (unwind-protect (progn ,@body)
+         (sdl2:destroy-texture ,texture)))))
+
 (defvar *player-x*)
 (defvar *player-y*)
 
@@ -127,13 +134,17 @@
       (setf *key-action-map* (map-keys (read file))))))
 
 (defun display-health (health max-health previous-health)
-  (display-bar 5 5 max-health 20 health max-health previous-health '(255 0 0) '(192 192 192)))
+  (display-bar 5 5 max-health 20 health max-health previous-health '(255 0 0) '(192 192 192)
+               :show-numbers t))
 
 (defun display-stamina (stamina max-stamina previous-stamina)
-  (display-bar 5 30 max-stamina 20 stamina max-stamina previous-stamina '(0 255 0) '(192 192 192)))
+  (display-bar 5 30 max-stamina 20 stamina max-stamina previous-stamina '(0 255 0) '(192 192 192)
+               :show-numbers t))
 
 (defun display-bar (x y w h amount max-amount previous-amount fg-rgb bg-rgb
-                    &optional (diff-rgb '(255 255 0)))
+                    &key
+                      (diff-rgb '(255 255 0))
+                      show-numbers)
   (destructuring-bind ((fg-r fg-g fg-b) (bg-r bg-g bg-b) (diff-r diff-g diff-b))
       (list fg-rgb bg-rgb diff-rgb)
     (multiple-value-bind (old-r old-g old-b old-a)
@@ -147,20 +158,20 @@
         (sdl2:render-fill-rect *renderer* diff-rect)
         (sdl2:set-render-draw-color *renderer* fg-r fg-g fg-b 1)
         (sdl2:render-fill-rect *renderer* current-rect)
-        (sdl2:set-render-draw-color *renderer* old-r old-g old-b old-a)))))
-
-(defmacro with-text-blended ((texture text &key font (r 255) (g 255) (b 255) (a 255)) &body body)
-  (with-gensyms (surface)
-    `(let* ((,surface (sdl2-ttf:render-text-blended (or ,font *font*) ,text ,r ,g ,b ,a))
-            (,texture (sdl2:create-texture-from-surface *renderer* ,surface)))
-       (unwind-protect (progn ,@body)
-         (sdl2:destroy-texture ,texture)))))
+        (sdl2:set-render-draw-color *renderer* old-r old-g old-b old-a))))
+  (when show-numbers
+    (with-text-blended (texture (format nil "~d/~d" amount max-amount))
+      (let ((y-offset (floor (- h (sdl2:texture-height texture)) 2)))
+        (sdl2:render-copy *renderer* texture
+                          :dest-rect (sdl2:make-rect (+ x w 5)
+                                                     (+ y y-offset)
+                                                     (sdl2:texture-width texture)
+                                                     (sdl2:texture-height texture)))))))
 
 (defun display-turn-number (turn width height)
   (declare (ignorable width height))
   (with-text-blended (texture (format nil "turn: ~d" turn))
     (sdl2:render-copy *renderer* texture
-                      :source-rect (cffi:null-pointer)
                       :dest-rect (sdl2:make-rect (- width (sdl2:texture-width texture) 5)
                                                  5
                                                  (sdl2:texture-width texture)
@@ -172,7 +183,6 @@
         for i from 1 to count
         do (with-text-blended (texture entry)
              (sdl2:render-copy *renderer* texture
-                               :source-rect (cffi:null-pointer)
                                :dest-rect (sdl2:make-rect 5
                                                           (- height (* (+ (sdl2:texture-height texture) 5) i))
                                                           (sdl2:texture-width texture)
@@ -181,8 +191,8 @@
 (defun draw-play (data width height)
   (declare (ignorable width height))
   (destructuring-bind (&key ((:player (&whole player
-                                       &key ((:attributes player-attributes))
-                                       &allow-other-keys)))
+                                              &key ((:attributes player-attributes))
+                                              &allow-other-keys)))
                          objects log turn)
       data
     (let ((*player-x* (getf player :x))
@@ -205,7 +215,7 @@
                                 &key
                                   ((:attributes (&key charges max-charges equipped)))
                                   ((:display-name name))
-                                &allow-other-keys)
+                                  &allow-other-keys)
                item
              (let* ((surface (sdl2-ttf:render-text-blended *font* (format nil "~c. ~a ~@[~a~]~@[/~a~]~@[(equipped: ~a)~]"
                                                                           char
@@ -216,7 +226,6 @@
                                                            255 255 255 255))
                     (texture (sdl2:create-texture-from-surface *renderer* surface)))
                (sdl2:render-copy *renderer* texture
-                                 :source-rect (cffi:null-pointer)
                                  :dest-rect (sdl2:make-rect 5
                                                             (* (+ (sdl2:texture-height texture) 5) i)
                                                             (sdl2:texture-width texture)
