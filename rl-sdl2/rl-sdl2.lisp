@@ -159,7 +159,8 @@
                       :dest-rect (sdl2:make-rect (- width (sdl2:texture-width texture) 5)
                                                  5
                                                  (sdl2:texture-width texture)
-                                                 (sdl2:texture-height texture)))))
+                                                 (sdl2:texture-height texture)))
+    (sdl2:destroy-texture texture)))
 
 (defun display-log (count log width height)
   (declare (ignorable width height))
@@ -172,7 +173,8 @@
                                :dest-rect (sdl2:make-rect 5
                                                           (- height (* (+ (sdl2:texture-height texture) 5) i))
                                                           (sdl2:texture-width texture)
-                                                          (sdl2:texture-height texture))))))
+                                                          (sdl2:texture-height texture)))
+             (sdl2:destroy-texture texture))))
 
 (defun draw-play (data width height)
   (declare (ignorable width height))
