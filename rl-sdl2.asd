@@ -13,6 +13,7 @@
                  #:serapeum
                  #:str
                  #:net.mfiano.lisp.dungen
+                 #:black-tie
                  #:dynamic-mixins
                  #:travv0.utils
                  #:cl-fad)

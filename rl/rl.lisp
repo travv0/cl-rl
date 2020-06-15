@@ -103,31 +103,31 @@
   (init-floor *stage-width* *stage-height*)
   (let ((pos (random-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
-  (loop repeat 5 do
-    (let ((pos (random-pos)))
-      (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
-                                 :x (x pos)
-                                 :y (y pos)))))
+  ;; (loop repeat 5 do
+  ;;   (let ((pos (random-pos)))
+  ;;     (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
+  ;;                                :x (x pos)
+  ;;                                :y (y pos)))))
   ;; (loop repeat 5 do
   ;;   (let ((pos (random-pos)))
   ;;     (add-object (make-instance 'rat
   ;;                                :x (x pos)
   ;;                                :y (y pos)))))
-  (loop repeat 10 do
-    (let ((pos (random-pos)))
-      (add-object (make-instance 'warrior
-                                 :x (x pos)
-                                 :y (y pos)))))
-  (loop repeat 5 do
-    (let ((pos (random-pos)))
-      (add-object (make-instance 'sword
-                                 :x (x pos)
-                                 :y (y pos)))))
-  (loop repeat 5 do
-    (let ((pos (random-pos)))
-      (add-object (make-instance 'kite-shield
-                                 :x (x pos)
-                                 :y (y pos)))))
+  ;; (loop repeat 10 do
+  ;;   (let ((pos (random-pos)))
+  ;;     (add-object (make-instance 'warrior
+  ;;                                :x (x pos)
+  ;;                                :y (y pos)))))
+  ;; (loop repeat 5 do
+  ;;   (let ((pos (random-pos)))
+  ;;     (add-object (make-instance 'sword
+  ;;                                :x (x pos)
+  ;;                                :y (y pos)))))
+  ;; (loop repeat 5 do
+  ;;   (let ((pos (random-pos)))
+  ;;     (add-object (make-instance 'kite-shield
+  ;;                                :x (x pos)
+  ;;                                :y (y pos)))))
 
   (update *player*))
 

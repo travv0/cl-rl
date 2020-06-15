@@ -6,6 +6,15 @@
 (defclass wall (visible solid opaque)
   ())
 
+(defclass water (visible solid)
+  ())
+
+(defclass shallow-water (visible)
+  ())
+
+(defclass sand (visible)
+  ())
+
 (defclass door (visible)
   ())
 
@@ -25,23 +34,26 @@
         (add-object cell)))))
 
 (defun init-floor (width height)
-  (let ((stage (dungen:make-stage :density 0.8
-                                  :wild-factor 0
-                                  :room-extent 19
-                                  :door-rate 1.0
-                                  :width width
-                                  :height height)))
-    (loop for y from (1- (dungen:stage-height stage)) downto 0 do
-      (loop for x below (dungen:stage-width stage)
-            for cell = (dungen:get-cell stage x y)
-            do (cond ((dungen:has-feature-p cell :wall)
-                      (add-object (make-wall x y)))
-                     ((or (dungen:has-feature-p cell :door/vertical)
-                          (dungen:has-feature-p cell :door/horizontal))
-                      (add-object (make-door x y))))))))
+  (loop for y from (1- height) downto 0 do
+    (loop for x below width
+          for noise = (* (black-tie:simplex-noise-2d-sf (/ x 250.0) (/ y 250.0)) 0.5)
+          do (incf noise (* (black-tie:simplex-noise-2d-sf (/ x 100.0) (/ y 100.0)) 0.25))
+             (incf noise (* (black-tie:simplex-noise-2d-sf (/ x 50.0) (/ y 50.0)) 0.125))
+             (incf noise (* (black-tie:simplex-noise-2d-sf (/ x 10.0) (/ y 10.0)) 0.0625))
+             (cond ((< noise -0.05) (add-object (make-water x y)))
+                   ((< noise 0) (add-object (make-water x y :shallow t)))
+                   ((< noise 0.05) (add-object (make-sand x y)))))))
 
 (defun make-wall (x y)
   (make-instance 'wall :x x :y y))
+
+(defun make-water (x y &key shallow)
+  (if shallow
+      (make-instance 'shallow-water :x x :y y)
+      (make-instance 'water :x x :y y)))
+
+(defun make-sand (x y)
+  (make-instance 'sand :x x :y y))
 
 (defun make-door (x y)
   (make-instance (mix 'opaque 'solid 'door) :x x :y y))
