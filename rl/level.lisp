@@ -6,6 +6,9 @@
 (defclass wall (visible solid opaque)
   ())
 
+(defclass tall-grass (visible opaque)
+  ())
+
 (defclass water (visible solid)
   ())
 
@@ -42,10 +45,14 @@
              (incf noise (* (black-tie:simplex-noise-2d-sf (/ x 10.0) (/ y 10.0)) 0.0625))
              (cond ((< noise -0.05) (add-object (make-water x y)))
                    ((< noise 0) (add-object (make-water x y :shallow t)))
-                   ((< noise 0.05) (add-object (make-sand x y)))))))
+                   ((< noise 0.05) (add-object (make-sand x y)))
+                   ((> noise 0.2) (add-object (make-tall-grass x y)))))))
 
 (defun make-wall (x y)
   (make-instance 'wall :x x :y y))
+
+(defun make-tall-grass (x y)
+  (make-instance 'tall-grass :x x :y y))
 
 (defun make-water (x y &key shallow)
   (if shallow

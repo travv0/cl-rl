@@ -33,6 +33,7 @@
     (:cell *grass-image*)
     (:water *water-image*)
     (:shallow-water *shallow-water-image*)
+    (:tall-grass *tall-grass-image*)
     (:sand *ground-image*)
     (:wall *tile-image*)
     (:door (unless (getf attributes :open) *bug-image*))

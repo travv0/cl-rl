@@ -19,9 +19,10 @@
                 (= x (1- *stage-width*))
                 (zerop y)
                 (= y (1- *stage-height*)))
+        (loop for obj in (get-objects-at-pos player) do (ensure-mix obj 'can-see))
         (block pos-loop
           (loop with hit-opaque = nil
-                for pos in (get-line player (pos x y))
+                for pos in (rest (get-line player (pos x y)))
                 do (loop for obj in (get-objects-at-pos pos)
                          do (ensure-mix obj 'can-see)
                             (when (typep obj 'opaque)
