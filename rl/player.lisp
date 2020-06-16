@@ -22,8 +22,11 @@
         (loop for obj in (get-objects-at-pos player) do (ensure-mix obj 'can-see))
         (block pos-loop
           (loop with hit-opaque = nil
+                for distance from 40 downto 0
                 for pos in (rest (get-line player (pos x y)))
                 do (loop for obj in (get-objects-at-pos pos)
+                         unless (plusp distance)
+                           do (return-from pos-loop)
                          do (ensure-mix obj 'can-see)
                             (when (typep obj 'opaque)
                               (setf hit-opaque t)))

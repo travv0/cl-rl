@@ -172,9 +172,9 @@
                                                      (sdl2:texture-width texture)
                                                      (sdl2:texture-height texture)))))))
 
-(defun display-turn-number (turn width height)
+(defun display-debug-info (turn seed width height)
   (declare (ignorable width height))
-  (with-text-blended (texture (format nil "turn: ~d" turn))
+  (with-text-blended (texture (format nil "turn: ~d | seed: ~4d" turn seed))
     (sdl2:render-copy *renderer* texture
                       :dest-rect (sdl2:make-rect (- width (sdl2:texture-width texture) 5)
                                                  5
@@ -197,7 +197,7 @@
   (destructuring-bind (&key ((:player (&whole player
                                               &key ((:attributes player-attributes))
                                               &allow-other-keys)))
-                         objects log turn)
+                         objects log turn seed)
       data
     (let ((*player-x* (getf player :x))
           (*player-y* (getf player :y)))
@@ -209,7 +209,7 @@
                        (getf player-attributes :max-stamina)
                        (getf player-attributes :previous-stamina))
       (display-log 5 log width height)
-      (display-turn-number turn width height))))
+      (display-debug-info turn seed width height))))
 
 (defun draw-inventory (data width height)
   (declare (ignorable width height))

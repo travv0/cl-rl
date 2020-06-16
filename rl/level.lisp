@@ -6,7 +6,7 @@
 (defclass wall (visible solid opaque)
   ())
 
-(defclass tall-grass (visible opaque)
+(defclass tall-grass (visible solid opaque)
   ())
 
 (defclass water (visible solid)
@@ -27,8 +27,8 @@
 (defun should-display (obj)
   (typep obj 'can-see))
 
-(defparameter *stage-width* 79)
-(defparameter *stage-height* 79)
+(defparameter *stage-width* 100)
+(defparameter *stage-height* 100)
 
 (defun init-cells (width height)
   (loop for y below height do
@@ -36,17 +36,28 @@
       (let ((cell (make-instance 'cell :x x :y y)))
         (add-object cell)))))
 
-(defun init-floor (width height)
+(defun grass-area-noise (x y)
+  (let ((noise (* (black-tie:perlin-noise-sf (/ x 250.0) (/ y 250.0)) 0.5)))
+    (incf noise (* (black-tie:perlin-noise-sf (/ x 100.0) (/ y 100.0)) 0.25))
+    (incf noise (* (black-tie:perlin-noise-sf (/ x 50.0) (/ y 50.0)) 0.125))
+    (incf noise (* (black-tie:perlin-noise-sf (/ x 10.0) (/ y 10.0)) 0.03))))
+
+(defun tree-noise (x y)
+  (* (black-tie:perlin-noise-sf (/ x 0.9) (/ y 0.9)) 100))
+
+(defun init-floor (width height &optional (seed 0))
   (loop for y from (1- height) downto 0 do
     (loop for x below width
-          for noise = (* (black-tie:simplex-noise-2d-sf (/ x 250.0) (/ y 250.0)) 0.5)
-          do (incf noise (* (black-tie:simplex-noise-2d-sf (/ x 100.0) (/ y 100.0)) 0.25))
-             (incf noise (* (black-tie:simplex-noise-2d-sf (/ x 50.0) (/ y 50.0)) 0.125))
-             (incf noise (* (black-tie:simplex-noise-2d-sf (/ x 10.0) (/ y 10.0)) 0.0625))
-             (cond ((< noise -0.05) (add-object (make-water x y)))
-                   ((< noise 0) (add-object (make-water x y :shallow t)))
-                   ((< noise 0.05) (add-object (make-sand x y)))
-                   ((> noise 0.2) (add-object (make-tall-grass x y)))))))
+          do (let* ((seeded-x (+ x (* width seed)))
+                    (seeded-y (+ y (* width seed)))
+                    (noise (grass-area-noise seeded-x seeded-y)))
+               (cond ((< noise -0.12) (add-object (make-water x y)))
+                     ((< noise -0.1) (add-object (make-water x y :shallow t)))
+                     ((< noise 0.02) (add-object (make-sand x y)))
+                     ((> noise 0.15)
+                      (let ((tree-noise (tree-noise seeded-x seeded-y)))
+                        (when (> tree-noise 30)
+                          (add-object (make-tall-grass x y))))))))))
 
 (defun make-wall (x y)
   (make-instance 'wall :x x :y y))

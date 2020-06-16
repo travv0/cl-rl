@@ -69,6 +69,7 @@
                                      attributes)))
 
 (defvar *turn* 1)
+(defvar *seed*)
 (defvar *state* :play)
 
 (defun dump-state ()
@@ -77,6 +78,7 @@
      (list :player (dump-object *player*)
            :log *log*
            :turn *turn*
+           :seed *seed*
            :objects (loop with result = '()
                           for y below (array-dimension *pos-cache* 1)
                           finally (return result)
@@ -94,13 +96,14 @@
 
 (defun initialize ()
   (setf *turn* 1)
+  (setf *seed* (random 10000))
   (setf *log* '())
   (setf *game-objects* '())
   (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
                                 :element-type 'list
                                 :initial-element '()))
   (init-cells *stage-width* *stage-height*)
-  (init-floor *stage-width* *stage-height*)
+  (init-floor *stage-width* *stage-height* *seed*)
   (let ((pos (random-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
   ;; (loop repeat 5 do
