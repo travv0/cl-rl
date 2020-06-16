@@ -30,10 +30,10 @@
 (defun get-image (name attributes)
   (ecase-of rl:visible-keyword name
     (:player *player-image*)
-    (:cell *grass-image*)
-    (:water *water-image*)
+    (:cell *ground-image*)
+    (:water *lava-image*)
     (:shallow-water *shallow-water-image*)
-    (:tall-grass *tall-grass-image*)
+    (:tall-grass *lava-rock-image*)
     (:sand *ground-image*)
     (:wall *tile-image*)
     (:door (unless (getf attributes :open) *bug-image*))
