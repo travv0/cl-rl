@@ -49,15 +49,21 @@
   (let ((noise (* (black-tie:perlin-noise-sf (/ x 5.0) (/ y 10.0) (/ seed 1.0)) 1)))
     (incf noise (* (black-tie:perlin-noise-sf (/ x 2.0) (/ y 2.0) (/ seed 1.0)) 0.5))))
 
-(defun init-grass-area (x y width height seed)
-  (let* ((noise (grass-area-noise x y seed)))
-    (cond ((< noise -0.12) (add-object (make-water x y)))
-          ((< noise -0.1) (add-object (make-water x y :shallow t)))
-          ((< noise -0.08) (add-object (make-sand x y)))
-          ((> noise 0)
-           (let ((tree-noise (tree-noise x y seed)))
-             (when (> tree-noise 30)
-               (add-object (make-tall-grass x y))))))))
+(defun init-grass-area (width height seed)
+  (loop for y from (1- height) downto 0 do
+    (loop for x below width do
+      (let* ((noise (grass-area-noise x y seed)))
+        (cond ((< noise -0.12) (add-object (make-water x y)))
+              ((< noise -0.1) (add-object (make-water x y :shallow t)))
+              ((< noise -0.08) (add-object (make-sand x y)))
+              ((> noise 0)
+               (let ((tree-noise (tree-noise x y seed)))
+                 (when (> tree-noise 30)
+                   (add-object (make-tall-grass x y)))))))))
+  (unless (and (> (count-if (op (typep _ 'water)) *game-objects*) 700)
+               (> (count-if (op (typep _ 'tall-grass)) *game-objects*) 300))
+    (clear-objects)
+    (init-grass-area width height (1+ seed))))
 
 (defun init-lava-area (x y width height seed)
   (let* ((noise (lava-area-noise x y seed)))
@@ -67,9 +73,7 @@
                  (add-object (make-tall-grass x y))))))))
 
 (defun init-floor (width height &optional (seed 0))
-  (loop for y from (1- height) downto 0 do
-    (loop for x below width
-          do (init-grass-area x y width height seed))))
+  (init-grass-area width height seed))
 
 (defun make-wall (x y)
   (make-instance 'wall :x x :y y))

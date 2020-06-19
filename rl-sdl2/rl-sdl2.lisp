@@ -2,7 +2,7 @@
 
 (in-package #:rl-sdl2)
 
-(defparameter *tile-size* 24)
+(defparameter *tile-size* 16)
 
 (defmacro init-textures ()
   (let (result)
