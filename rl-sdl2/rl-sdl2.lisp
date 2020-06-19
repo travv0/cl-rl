@@ -2,7 +2,7 @@
 
 (in-package #:rl-sdl2)
 
-(defparameter *tile-size* 32)
+(defparameter *tile-size* 24)
 
 (defmacro init-textures ()
   (let (result)
@@ -30,10 +30,10 @@
 (defun get-image (name attributes)
   (ecase-of rl:visible-keyword name
     (:player *player-image*)
-    (:cell *ground-image*)
-    (:water *lava-image*)
+    (:cell *grass-image*)
+    (:water *water-image*)
     (:shallow-water *shallow-water-image*)
-    (:tall-grass *lava-rock-image*)
+    (:tall-grass *tall-grass-image*)
     (:sand *ground-image*)
     (:wall *tile-image*)
     (:door (unless (getf attributes :open) *bug-image*))
@@ -80,17 +80,13 @@
        (or (@ *key-action-map* *state* scancode)
            (and (eql *state* :inventory) (scancode-char scancode)))))
 
-(defparameter *letters*
-  (loop for c from (char-code #\a) to (char-code #\z)
-        collecting (code-char c)))
-
 (defun scancode-char (scancode)
   (let* ((upcase-p (and (typep scancode 'cons)
                         (eq (first scancode) :shift)))
          (scancode (ctypecase scancode
                      (cons (second scancode))
                      (t scancode)))
-         (character (nth (- scancode 4) *letters*)))
+         (character (nth (- scancode 4) rl:+letters+)))
     (if (and upcase-p character)
         (char-upcase character)
         character)))

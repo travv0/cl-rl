@@ -19,6 +19,7 @@
                  #:cl-fad)
     :components ((:module "rl"
                   :components ((:file "package")
+                               (:file "utils")
                                (:file "level")
                                (:file "pos")
                                (:file "mixins")

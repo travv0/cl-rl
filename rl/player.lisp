@@ -11,20 +11,20 @@
    (%inventory :initform (list (cons #\a (make-instance 'health-potion :charges 5))
                                (cons #\b (make-instance 'sword))
                                (cons #\c (make-instance 'kite-shield))))
-   (%view-distance :initform 999 :accessor view-distance)))
+   (%view-distance :initform 20 :accessor view-distance)))
 
-(defmethod update :after ((player player))
+(defun update-can-see ()
   (loop for y below (array-dimension *pos-cache* 1) do
     (loop for x below (array-dimension *pos-cache* 0) do
       (when (or (zerop x)
                 (= x (1- *stage-width*))
                 (zerop y)
                 (= y (1- *stage-height*)))
-        (loop for obj in (get-objects-at-pos player) do (ensure-mix obj 'can-see))
+        (loop for obj in (get-objects-at-pos *player*) do (ensure-mix obj 'can-see))
         (block pos-loop
           (loop with hit-opaque = nil
-                for distance from (view-distance player) downto 0
-                for pos in (rest (get-line player (pos x y)))
+                for distance from (view-distance *player*) downto 0
+                for pos in (rest (get-line *player* (pos x y)))
                 do (loop for obj in (get-objects-at-pos pos)
                          unless (plusp distance)
                            do (return-from pos-loop)
@@ -33,7 +33,7 @@
                               (setf hit-opaque t)))
                    (when hit-opaque
                      (return-from pos-loop)))))))
-  (with-accessors ((x x) (y y)) player
+  (with-accessors ((x x) (y y)) *player*
     (flet ((visible-pos (check-x check-y)
              (and (not (typep (get-visible-object-at-pos (pos check-x check-y)) 'opaque))
                   (some (op (typep _1 'can-see))

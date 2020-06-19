@@ -6,7 +6,7 @@
                  :accessor enemy-state)
    (%wandering-to :initform (random-pos)
                   :accessor wandering-to)
-   (%view-distance :initform 30 :initarg :view-distance :accessor view-distance)))
+   (%view-distance :initform 10 :initarg :view-distance :accessor view-distance)))
 
 (defclass goblin (enemy humanoid)
   ((%stamina :initform 40)

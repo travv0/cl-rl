@@ -95,8 +95,14 @@
                                                                         ((eq (equip-right-arm *player*) item) "right hand"))))))))))
 
 (defun initialize ()
+  (sb-ext:gc :full t)
   (setf *turn* 1)
-  (setf *seed* (random 10000))
+  (setf *seed* (let* ((seed (write-to-string (random 10000000)))
+                      (numerator (print (subseq seed 0 (- (length seed) 3))))
+                      (denominator (print (subseq seed (- (length seed) 3)))))
+                 (/ (parse-integer numerator) (parse-integer denominator))) ;; (with-output-to-string (s)
+        ;;   (loop repeat 10 do (princ (random-elt +letters+) s)))
+        )
   (setf *log* '())
   (setf *game-objects* '())
   (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
@@ -106,33 +112,29 @@
   (init-floor *stage-width* *stage-height* *seed*)
   (let ((pos (random-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
-  ;; (loop repeat 5 do
-  ;;   (let ((pos (random-pos)))
-  ;;     (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
-  ;;                                :x (x pos)
-  ;;                                :y (y pos)))))
-  ;; (loop repeat 5 do
-  ;;   (let ((pos (random-pos)))
-  ;;     (add-object (make-instance 'rat
-  ;;                                :x (x pos)
-  ;;                                :y (y pos)))))
-  ;; (loop repeat 10 do
-  ;;   (let ((pos (random-pos)))
-  ;;     (add-object (make-instance 'warrior
-  ;;                                :x (x pos)
-  ;;                                :y (y pos)))))
-  ;; (loop repeat 5 do
-  ;;   (let ((pos (random-pos)))
-  ;;     (add-object (make-instance 'sword
-  ;;                                :x (x pos)
-  ;;                                :y (y pos)))))
-  ;; (loop repeat 5 do
-  ;;   (let ((pos (random-pos)))
-  ;;     (add-object (make-instance 'kite-shield
-  ;;                                :x (x pos)
-  ;;                                :y (y pos)))))
+  (loop repeat 5 do
+    (let ((pos (random-pos)))
+      (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
+                                 :x (x pos)
+                                 :y (y pos)))))
+  (loop repeat 10 do
+    (let ((pos (random-pos)))
+      (add-object (make-instance 'warrior
+                                 :x (x pos)
+                                 :y (y pos)))))
+  (loop repeat 5 do
+    (let ((pos (random-pos)))
+      (add-object (make-instance 'sword
+                                 :x (x pos)
+                                 :y (y pos)))))
+  (loop repeat 5 do
+    (let ((pos (random-pos)))
+      (add-object (make-instance 'kite-shield
+                                 :x (x pos)
+                                 :y (y pos)))))
 
-  (update *player*))
+  (update *player*)
+  (update-can-see))
 
 (defun tick (action)
   (delete-from-mix *player* 'running)
@@ -197,8 +199,7 @@
                (initialize))
 
              (let ((*game-objects* (cons *player* *game-objects*)))
-               (unless (cooling-down-p *player*)
-                 (mapc (op (delete-from-mix _ 'can-see)) *game-objects*))
+               (mapc (op (delete-from-mix _ 'can-see)) *game-objects*)
 
                (dolist (obj *game-objects*)
                  (unless (typep obj 'deleted)
@@ -212,6 +213,9 @@
                            do (delete-from-mix obj 'deleted)
                               (removef (aref *pos-cache* (x obj) (y obj)) obj)
                          else collect obj))
+
+             (when (zerop (cooldown *player*))
+               (update-can-see))
 
              (incf *turn*)
           while (plusp (cooldown *player*))))

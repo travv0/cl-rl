@@ -13,15 +13,18 @@
                 #:removef
                 #:make-keyword
                 #:lastcar
+                #:random-elt
                 #:assoc-value)
   (:import-from #:serapeum
+                #:defconst
                 #:op
                 #:do-hash-table)
   (:export #:tick
            #:initialize
            #:error-condition
            #:visible-keyword
-           #:states))
+           #:states
+           #:+letters+))
 
 (defpackage #:astar
   (:use #:cl)
