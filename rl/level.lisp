@@ -43,23 +43,32 @@
   (let ((noise (* (black-tie:perlin-noise-sf (/ x 5.0) (/ y 10.0) (/ seed 1.0)) 1)))
     (incf noise (* (black-tie:perlin-noise-sf (/ x 2.0) (/ y 2.0) (/ seed 1.0)) 0.5))))
 
+(defun make-perlin-noise-seed (seed)
+  (let* ((seed (write-to-string seed))
+         (numerator (subseq seed 0 (- (length seed) 3)))
+         (denominator (subseq seed (- (length seed) 3))))
+    (/ (parse-integer numerator) (parse-integer denominator))))
+
 (defun init-grass-area (width height seed)
-  (loop for y from (1- height) downto 0 do
-    (loop for x below width do
-      (let* ((noise (grass-area-noise x y seed)))
-        (cond ((< noise -0.12) (add-object (make-water x y)))
-              ((< noise -0.1) (add-object (make-water x y :shallow t)))
-              ((< noise -0.08) (add-object (make-sand x y)))
-              (t
-               (add-object (make-grass x y))
-               (when (> noise 0)
-                 (let ((tree-noise (tree-noise x y seed)))
-                   (when (> tree-noise 30)
-                     (add-object (make-tall-grass x y))))))))))
-  (unless (and (> (count-if (op (typep _ 'water)) *game-objects*) 700)
-               (> (count-if (op (typep _ 'tall-grass)) *game-objects*) 300))
-    (clear-objects)
-    (init-grass-area width height (1+ seed))))
+  (let ((seed (if (integerp seed)
+                  (make-perlin-noise-seed seed)
+                  seed)))
+    (loop for y from (1- height) downto 0 do
+      (loop for x below width do
+        (let* ((noise (grass-area-noise x y seed)))
+          (cond ((< noise -0.12) (add-object (make-water x y)))
+                ((< noise -0.1) (add-object (make-water x y :shallow t)))
+                ((< noise -0.08) (add-object (make-sand x y)))
+                (t
+                 (add-object (make-grass x y))
+                 (when (> noise 0.1)
+                   (let ((tree-noise (tree-noise x y seed)))
+                     (when (> tree-noise 30)
+                       (add-object (make-tall-grass x y))))))))))
+    (unless (and (> (count-if (op (typep _ 'water)) *game-objects*) 700)
+                 (> (count-if (op (typep _ 'tall-grass)) *game-objects*) 300))
+      (clear-objects)
+      (init-grass-area width height (1+ seed)))))
 
 (defun init-lava-area (x y width height seed)
   (let* ((noise (lava-area-noise x y seed)))
