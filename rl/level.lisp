@@ -6,6 +6,9 @@
 (defclass wall (visible solid opaque)
   ())
 
+(defclass grass (visible)
+  ())
+
 (defclass tall-grass (visible solid opaque)
   ())
 
@@ -21,20 +24,11 @@
 (defclass door (visible)
   ())
 
-(defclass cell (visible)
-  ())
-
 (defun should-display (obj)
   (typep obj 'can-see))
 
 (defparameter *stage-width* 100)
 (defparameter *stage-height* 100)
-
-(defun init-cells (width height)
-  (loop for y below height do
-    (loop for x below width do
-      (let ((cell (make-instance 'cell :x x :y y)))
-        (add-object cell)))))
 
 (defun grass-area-noise (x y seed)
   (let ((noise (* (black-tie:perlin-noise-sf (/ x 250.0) (/ y 250.0) (/ seed 1.0)) 0.5)))
@@ -56,10 +50,12 @@
         (cond ((< noise -0.12) (add-object (make-water x y)))
               ((< noise -0.1) (add-object (make-water x y :shallow t)))
               ((< noise -0.08) (add-object (make-sand x y)))
-              ((> noise 0)
-               (let ((tree-noise (tree-noise x y seed)))
-                 (when (> tree-noise 30)
-                   (add-object (make-tall-grass x y)))))))))
+              (t
+               (add-object (make-grass x y))
+               (when (> noise 0)
+                 (let ((tree-noise (tree-noise x y seed)))
+                   (when (> tree-noise 30)
+                     (add-object (make-tall-grass x y))))))))))
   (unless (and (> (count-if (op (typep _ 'water)) *game-objects*) 700)
                (> (count-if (op (typep _ 'tall-grass)) *game-objects*) 300))
     (clear-objects)
@@ -77,6 +73,9 @@
 
 (defun make-wall (x y)
   (make-instance 'wall :x x :y y))
+
+(defun make-grass (x y)
+  (make-instance 'grass :x x :y y))
 
 (defun make-tall-grass (x y)
   (make-instance 'tall-grass :x x :y y))

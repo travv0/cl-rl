@@ -44,8 +44,7 @@
   (setf *game-objects* '())
   (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
                                 :element-type 'list
-                                :initial-element '()))
-  (init-cells *stage-width* *stage-height*))
+                                :initial-element '())))
 
 (defmethod dump-object ((obj visible) &optional attributes)
   (list :name (make-keyword (class-name (primary-class-of-mixin obj)))

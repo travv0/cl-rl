@@ -53,7 +53,7 @@
 (defun get-display-char (name attributes)
   (ecase-of rl:visible-keyword name
     (:player (values #\@ :white :black t))
-    (:cell (values #\. :green :black nil))
+    (:grass (values #\. :green :black nil))
     (:wall (values #\# :yellow :black nil))
     (:water (values #\~ :blue :black nil))
     (:shallow-water (values #\. :blue :black t))

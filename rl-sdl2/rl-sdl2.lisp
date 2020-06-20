@@ -30,7 +30,7 @@
 (defun get-image (name attributes)
   (ecase-of rl:visible-keyword name
     (:player *player-image*)
-    (:cell *grass-image*)
+    (:grass *grass-image*)
     (:water *water-image*)
     (:shallow-water *shallow-water-image*)
     (:tall-grass *tall-grass-image*)

@@ -95,8 +95,7 @@
                                              (+ (y obj) (dy obj)))))
         for objs = (get-objects-at-pos step) do
           (loop for other-obj in objs
-                when (and (not (typep other-obj 'cell))
-                          (same step other-obj))
+                when (same step other-obj)
                   do (push (cons other-obj previous-step) collisions)
                 do (setf previous-step step))
         finally (return collisions)))
