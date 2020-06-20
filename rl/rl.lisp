@@ -100,10 +100,11 @@
                                                                   (cond ((eq (equip-left-arm *player*) item) "left hand")
                                                                         ((eq (equip-right-arm *player*) item) "right hand"))))))))))
 
-(defun initialize ()
+(defun initialize (&optional seed)
   (sb-ext:gc :full t)
   (setf *turn* 1)
-  (setf *seed* (random 10000000))
+  (setf *seed* (or seed (random 10000000)))
+  (setf *random-state* (sb-ext:seed-random-state *seed*))
   (setf *log* '())
   (clear-objects)
   (init-floor *stage-width* *stage-height* *seed*)

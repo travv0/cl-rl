@@ -68,7 +68,7 @@
     (unless (and (> (count-if (op (typep _ 'water)) *game-objects*) 700)
                  (> (count-if (op (typep _ 'tall-grass)) *game-objects*) 300))
       (clear-objects)
-      (init-grass-area width height (1+ seed)))))
+      (init-grass-area width height (random 10000000)))))
 
 (defun init-lava-area (x y width height seed)
   (let* ((noise (lava-area-noise x y seed)))
