@@ -3,13 +3,16 @@
 (defvar *pos-cache*)
 (defvar *game-objects*)
 
+(defclass spawn (pos)
+  ())
+
 (defclass wall (visible solid opaque)
   ())
 
 (defclass grass (visible)
   ())
 
-(defclass tall-grass (visible solid opaque)
+(defclass tree (visible solid opaque)
   ())
 
 (defclass water (visible solid)
@@ -49,10 +52,26 @@
          (denominator (subseq seed (- (length seed) 3))))
     (/ (parse-integer numerator) (parse-integer denominator))))
 
+(defun make-secret-entrance ()
+  (let ((tree (random-elt (remove-if-not (op (typep _ 'tree))
+                                         *game-objects*)))
+        (directions (remove-duplicates
+                     (tu:make-combos 2 '(-1 -1 0 1 1))
+                     :test #'equal)))
+    (clear-position tree)
+    (add-object (make-water (x tree) (y tree) :shallow t))
+    (loop for (dx dy) in (remove (random-elt directions)
+                                 directions
+                                 :test #'equal)
+          do (add-object (make-tree (+ (x tree) dx)
+                                    (+ (y tree) dy))))
+    (pos (x tree) (y tree))))
+
 (defun init-grass-area (width height seed)
   (let ((seed (if (integerp seed)
                   (make-perlin-noise-seed seed)
-                  seed)))
+                  seed))
+        (spawn (add-object (make-spawn))))
     (loop for y from (1- height) downto 0 do
       (loop for x below width do
         (let* ((noise (grass-area-noise x y seed)))
@@ -64,18 +83,26 @@
                  (when (> noise 0.1)
                    (let ((tree-noise (tree-noise x y seed)))
                      (when (> tree-noise 30)
-                       (add-object (make-tall-grass x y))))))))))
+                       (add-object (make-tree x y))))))))))
+
     (unless (and (> (count-if (op (typep _ 'water)) *game-objects*) 700)
-                 (> (count-if (op (typep _ 'tall-grass)) *game-objects*) 300))
+                 (> (count-if (op (typep _ 'tree)) *game-objects*) 300))
       (clear-objects)
-      (init-grass-area width height (random 10000000)))))
+      (init-grass-area width height (random 10000000))
+      (return-from init-grass-area))
+
+    (let ((secret-entrance (make-secret-entrance)))
+      (unless (find-path spawn secret-entrance)
+        (clear-objects)
+        (init-grass-area width height (random 10000000))
+        (return-from init-grass-area)))))
 
 (defun init-lava-area (x y width height seed)
   (let* ((noise (lava-area-noise x y seed)))
     (cond ((< noise -0.2) (add-object (make-water x y)))
           (t (let ((rock-noise (tree-noise x y seed)))
                (when (> rock-noise 40)
-                 (add-object (make-tall-grass x y))))))))
+                 (add-object (make-tree x y))))))))
 
 (defun init-floor (width height &optional (seed 0))
   (init-grass-area width height seed))
@@ -86,8 +113,8 @@
 (defun make-grass (x y)
   (make-instance 'grass :x x :y y))
 
-(defun make-tall-grass (x y)
-  (make-instance 'tall-grass :x x :y y))
+(defun make-tree (x y)
+  (make-instance 'tree :x x :y y))
 
 (defun make-water (x y &key shallow)
   (if shallow
@@ -97,13 +124,18 @@
 (defun make-sand (x y)
   (make-instance 'sand :x x :y y))
 
+(defun make-spawn ()
+  (let ((pos (random-pos)))
+    (make-instance 'spawn :x (x pos) :y (y pos))))
+
 (defun make-door (x y)
   (make-instance (mix 'opaque 'solid 'door) :x x :y y))
 
 (defun get-objects-at-pos (pos)
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
-    (aref *pos-cache* (x pos) (y pos))))
+    (remove-if-not (op (typep _ 'visible))
+                   (aref *pos-cache* (x pos) (y pos)))))
 
 (defun get-visible-objects-at-pos (pos)
   (when (and (<= 0 (x pos) (1- *stage-width*))

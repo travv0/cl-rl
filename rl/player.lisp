@@ -20,7 +20,8 @@
                 (= x (1- *stage-width*))
                 (zerop y)
                 (= y (1- *stage-height*)))
-        (loop for obj in (get-objects-at-pos *player*) do (ensure-mix obj 'can-see))
+        (loop for obj in (get-objects-at-pos *player*) do
+          (ensure-mix obj 'can-see))
         (block pos-loop
           (loop with hit-opaque = nil
                 for distance from (view-distance *player*) downto 0

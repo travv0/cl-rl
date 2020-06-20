@@ -57,7 +57,7 @@
     (:wall (values #\# :yellow :black nil))
     (:water (values #\~ :blue :black nil))
     (:shallow-water (values #\. :blue :black t))
-    (:tall-grass (values #\" :green :black nil))
+    (:tree (values #\" :green :black nil))
     (:sand (values #\. :yellow :black nil))
     (:door (values (if (getf attributes :open) #\' #\+) :red :black nil))
     (:goblin (values #\g :green :black nil))

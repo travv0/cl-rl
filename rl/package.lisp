@@ -2,6 +2,7 @@
 
 (defpackage #:rl
   (:use #:cl #:dynamic-mixins #:alexandria #:serapeum)
+  (:local-nicknames (:tu :travv0.utils))
   (:export #:tick
            #:initialize
            #:error-condition

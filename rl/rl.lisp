@@ -38,13 +38,19 @@
 (defun add-object (obj)
   (push obj *game-objects*)
   (when (typep obj 'pos)
-    (push obj (aref *pos-cache* (x obj) (y obj)))))
+    (push obj (aref *pos-cache* (x obj) (y obj))))
+  obj)
 
 (defun clear-objects ()
   (setf *game-objects* '())
   (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
                                 :element-type 'list
                                 :initial-element '())))
+
+(defun clear-position (pos)
+  (loop for obj in (get-objects-at-pos pos) do
+    (removef *game-objects* obj))
+  (setf (aref *pos-cache* (x pos) (y pos)) '()))
 
 (defmethod dump-object ((obj visible) &optional attributes)
   (list :name (make-keyword (class-name (primary-class-of-mixin obj)))
@@ -100,6 +106,9 @@
                                                                   (cond ((eq (equip-left-arm *player*) item) "left hand")
                                                                         ((eq (equip-right-arm *player*) item) "right hand"))))))))))
 
+(defun spawn-pos ()
+  (find-if (op (typep _ 'spawn)) *game-objects*))
+
 (defun initialize (&optional seed)
   (sb-ext:gc :full t)
   (setf *turn* 1)
@@ -108,7 +117,7 @@
   (setf *log* '())
   (clear-objects)
   (init-floor *stage-width* *stage-height* *seed*)
-  (let ((pos (random-pos)))
+  (let ((pos (spawn-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
   (loop repeat 5 do
     (let ((pos (random-pos)))
