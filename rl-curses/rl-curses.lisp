@@ -51,25 +51,24 @@
     (display obj)))
 
 (defun get-display-char (name attributes)
-  (case name
+  (ecase-of rl:visible-keyword name
     (:player (values #\@ :white :black t))
-    (:cell (values #\. :white :black nil))
+    (:cell (values #\. :green :black nil))
     (:wall (values #\# :yellow :black nil))
+    (:water (values #\~ :blue :black nil))
+    (:shallow-water (values #\. :blue :black t))
+    (:tall-grass (values #\" :green :black nil))
+    (:sand (values #\. :yellow :black nil))
     (:door (values (if (getf attributes :open) #\' #\+) :red :black nil))
     (:goblin (values #\g :green :black nil))
     (:goblin-fighter (values #\g :green :black t))
     (:rat (values #\r :white :black nil))
     (:warrior (values #\w :red :black nil))
-    (:potion (values #\! :yellow :black t))
+    (:health-potion (values #\! :yellow :black nil))
     ((:dagger :sword) (values #\) :yellow :black nil))
     (:kite-shield (values #\] :yellow :black nil))
-    (:memory
-     (display (getf attributes :memory-of) t)
-     (return-from get-display-char))
-    ((nil) (return-from get-display-char))
-    (t
-     #-release (error "~s fell through case expression" name)
-     #+release (values #\? :white :black nil))))
+    ((:shield :weapon :enemy :item)
+     (error "~a is a base class and shouldn't be directly instantiated" name))))
 
 (desfun display ((&key name x y attributes) &optional memory-p)
   (multiple-value-bind (char fg bg bold)
@@ -198,7 +197,7 @@
   (destructuring-bind (&key ((:player (&whole player
                                               &key ((:attributes player-attributes))
                                               &allow-other-keys)))
-                         objects log turn)
+                         objects log turn seed)
       data
     (let ((*player-x* (getf player :x))
           (*player-y* (getf player :y)))
@@ -212,7 +211,7 @@
                        (getf player-attributes :max-stamina)
                        (getf player-attributes :previous-stamina))
       (display-log 5 log)
-      (let ((turn-string (format nil "turn: ~d" turn)))
+      (let ((turn-string (format nil "turn: ~d | seed: ~d" turn seed)))
         (charms:write-string-at-point charms:*standard-window*
                                       turn-string
                                       (- width (length turn-string))

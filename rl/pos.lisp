@@ -79,8 +79,10 @@
           (reverse result)))))
 
 (defmethod update-pos ((obj pos) new-x new-y)
-  (with-accessors ((x x) (y y)) obj
-    (removef (aref *pos-cache* x y) obj)
-    (push obj (aref *pos-cache* new-x new-y))
-    (setf (slot-value obj '%x) new-x
-          (slot-value obj '%y) new-y)))
+  (let ((new-x (clamp new-x 0 (1- *stage-width*)))
+        (new-y (clamp new-y 0 (1- *stage-height*))))
+    (with-accessors ((x x) (y y)) obj
+      (removef (aref *pos-cache* x y) obj)
+      (push obj (aref *pos-cache* new-x new-y))
+      (setf (slot-value obj '%x) new-x
+            (slot-value obj '%y) new-y))))

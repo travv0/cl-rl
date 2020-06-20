@@ -11,7 +11,7 @@
    (%inventory :initform (list (cons #\a (make-instance 'health-potion :charges 5))
                                (cons #\b (make-instance 'sword))
                                (cons #\c (make-instance 'kite-shield))))
-   (%view-distance :initform 20 :accessor view-distance)))
+   (%view-distance :initform 40 :accessor view-distance)))
 
 (defun update-can-see ()
   (loop for y below (array-dimension *pos-cache* 1) do
