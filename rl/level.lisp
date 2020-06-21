@@ -47,13 +47,16 @@
     (incf noise (* (black-tie:perlin-noise-sf (/ x 2.0) (/ y 2.0) (/ seed 1.0)) 0.5))))
 
 (defun make-perlin-noise-seed (seed)
-  (let* ((seed (write-to-string seed))
-         (numerator (subseq seed 0 (- (length seed) 3)))
-         (denominator (subseq seed (- (length seed) 3))))
-    (/ (parse-integer numerator) (parse-integer denominator))))
+  (let* ((string-seed (write-to-string seed))
+         (numerator (subseq string-seed 0 (- (length string-seed) 3)))
+         (denominator (subseq string-seed (- (length string-seed) 3))))
+    (handler-case (/ (parse-integer numerator) (parse-integer denominator))
+      (arithmetic-error () (make-perlin-noise-seed (+ seed 9))))))
 
 (defun make-secret-entrance ()
-  (let ((tree (random-elt (remove-if-not (op (typep _ 'tree))
+  (let ((tree (random-elt (remove-if-not (lambda (obj) (and (typep obj 'tree)
+                                                            (< 0 (x obj) (1- *stage-width*))
+                                                            (< 0 (y obj) (1- *stage-height*))))
                                          *game-objects*)))
         (directions (remove-duplicates
                      (tu:make-combos 2 '(-1 -1 0 1 1))
@@ -74,8 +77,7 @@
            (return-from init-grass-area)))
     (let ((seed (if (integerp seed)
                     (make-perlin-noise-seed seed)
-                    seed))
-          (spawn (add-object (make-spawn))))
+                    seed)))
       (loop for y from (1- height) downto 0 do
         (loop for x below width do
           (let* ((noise (grass-area-noise x y seed)))
@@ -93,7 +95,8 @@
                    (> (count-if (op (typep _ 'tree)) *game-objects*) 300))
         (retry))
 
-      (let ((secret-entrance (make-secret-entrance)))
+      (let* ((secret-entrance (make-secret-entrance))
+             (spawn (add-object (make-spawn))))
         (unless (find-path spawn secret-entrance)
           (retry))))))
 

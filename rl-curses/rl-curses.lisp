@@ -253,7 +253,7 @@
   (bt:make-thread (lambda () (main))
                   :name "game thread"))
 
-(defun main ()
+(defun main (&optional seed)
   (load-keys)
   (handler-case
       (charms:with-curses ()
@@ -265,7 +265,7 @@
         (charms/ll:keypad charms/ll:*stdscr* 1)
         (start-color)
 
-        (rl:initialize)
+        (rl:initialize seed)
         (update-and-display nil)
 
         (loop for c = (get-char-code)
