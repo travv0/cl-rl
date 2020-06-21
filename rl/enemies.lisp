@@ -17,15 +17,15 @@
    (%vitality :initform 3)))
 
 (defclass goblin-fighter (goblin)
-  ((%equip-right-arm :initform (make-instance 'dagger))))
+  ((%inventory :initform (make-inventory (make-instance 'dagger)))))
 
 (defclass warrior (enemy humanoid)
-  ((%equip-right-arm :initform (make-instance 'sword))
-   (%equip-left-arm :initform (make-instance 'kite-shield))
-   (%strength :initform 5)
+  ((%strength :initform 5)
    (%dexterity :initform 5)
    (%endurance :initform 5)
-   (%vitality :initform 5)))
+   (%vitality :initform 5)
+   (%inventory :initform (make-inventory (make-instance 'sword)
+                                         (make-instance 'kite-shield)))))
 
 (defclass rat (enemy)
   ((%strength :initform 2)

@@ -8,9 +8,9 @@
    (%dexterity :initform 10)
    (%endurance :initform 100)
    (%vitality :initform 100)
-   (%inventory :initform (list (cons #\a (make-instance 'health-potion :charges 5))
-                               (cons #\b (make-instance 'sword))
-                               (cons #\c (make-instance 'kite-shield))))
+   (%inventory :initform (make-inventory (make-instance 'health-potion :charges 5)
+                                         (make-instance 'sword)
+                                         (make-instance 'kite-shield)))
    (%view-distance :initform 40 :accessor view-distance)))
 
 (defun update-can-see ()

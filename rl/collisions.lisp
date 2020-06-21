@@ -71,9 +71,12 @@
       (write-to-log "~a was defeated" (display-name obj))
       (ensure-mix obj 'deleted))))
 
+(defun damage-mod (damage)
+  (ceiling (* (+ 0.25 (random 1.0)) damage)))
+
 (defmethod calculate-damage (weapon strength-stat &optional resistances)
   (declare (ignore resistances))
-  (ceiling (* (+ 0.8 (random 0.4)) *unarmed-damage*)))
+  (damage-mod *unarmed-damage*))
 
 (defmethod calculate-damage ((weapon weapon) (attacker alive) &optional resistances)
   (let ((damage (* (1+ (* (/ (strength attacker) 50) (weapon-strength-scale weapon)))
@@ -85,7 +88,7 @@
           (setf modifier-damage (- (* 2 modifier-damage)
                                    (* (resistance-amount resistance) modifier-damage))))
         (setf damage (* damage 0.95 modifier-damage))))
-    (ceiling (* (+ 0.8 (random 0.4)) damage))))
+    (damage-mod damage)))
 
 (defmethod check-collisions ((obj moveable))
   (declare (optimize speed))

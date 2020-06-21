@@ -8,7 +8,8 @@
                #:serapeum
                #:str
                #:black-tie
-               #:dynamic-mixins)
+               #:dynamic-mixins
+               #:travv0.utils)
   :components ((:file "package")
                (:file "utils")
                (:file "level")

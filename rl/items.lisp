@@ -58,3 +58,6 @@
           do (push (cons c item) (inventory inventory))
              (setf (inventory inventory) (sort (inventory inventory) #'char< :key #'car))
              (return (inventory inventory))))
+
+(defun make-inventory (&rest items)
+  (mapcar #'cons +letters+ items))
