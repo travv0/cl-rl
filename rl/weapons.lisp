@@ -14,7 +14,7 @@
 
 (defmethod initialize-instance :after ((weapon weapon) &key)
   (unless (slot-boundp weapon '%stamina-use)
-    (setf (stamina-use weapon) (+ (damage weapon) 5)))
+    (setf (stamina-use weapon) (+ (floor (damage weapon) 2) 5)))
   (unless (slot-boundp weapon '%weapon-windup)
     (setf (weapon-windup weapon) (floor (weapon-cooldown weapon) 2))))
 

@@ -23,7 +23,6 @@
                     (display-name moving-obj)
                     (display-name obj))))
 
-(defparameter *unarmed-damage* 10)
 (defparameter *unarmed-stamina* 10)
 (defparameter *unarmed-cooldown* 2)
 (defparameter *unarmed-windup* 1)
@@ -74,9 +73,9 @@
 (defun damage-mod (damage)
   (ceiling (* (+ 0.25 (random 1.0)) damage)))
 
-(defmethod calculate-damage (weapon strength-stat &optional resistances)
+(defmethod calculate-damage (weapon (attacker alive) &optional resistances)
   (declare (ignore resistances))
-  (damage-mod *unarmed-damage*))
+  (damage-mod (* 2 (strength attacker))))
 
 (defmethod calculate-damage ((weapon weapon) (attacker alive) &optional resistances)
   (let ((damage (* (1+ (* (/ (strength attacker) 50) (weapon-strength-scale weapon)))

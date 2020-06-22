@@ -62,6 +62,7 @@
     (:door (values (if (getf attributes :open) #\' #\+) :red :black nil))
     (:goblin (values #\g :green :black nil))
     (:goblin-fighter (values #\g :green :black t))
+    (:goblin-brawler (values #\g :yellow :black nil))
     (:rat (values #\r :white :black nil))
     (:warrior (values #\w :red :black nil))
     (:health-potion (values #\! :yellow :black nil))

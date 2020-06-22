@@ -65,9 +65,9 @@
    (%strength :initform (error "strength must be set") :accessor strength)
    (%dexterity :initform (error "dexterity must be set") :accessor dexterity)
    (%endurance :initform (error "endurance must be set") :accessor endurance)
-
-   (%strength-damage :reader strength-damage)
-   (%dexterity-damage :reader dexterity-damage)
+   (%resistance :initform (error "resistance must be set") :accessor resistance)
+   (%intelligence :initform (error "intelligence must be set") :accessor intelligence)
+   (%faith :initform (error "faith must be set") :accessor faith)
 
    (%stamina :reader stamina)
    (%max-stamina :reader max-stamina)
@@ -80,7 +80,7 @@
    (%resistances :initform '() :initarg :resistances :accessor resistances)))
 
 (defmethod calculate-max-health ((obj alive))
-  (round (+ 90 (* 100 (/ (vitality obj) 50)))))
+  (round (+ 90 (* 100 (/ (vitality obj) 20)))))
 
 (defmethod calculate-max-stamina ((obj alive))
   (round (+ 90 (* 100 (/ (endurance obj) 50)))))

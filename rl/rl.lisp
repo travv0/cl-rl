@@ -119,12 +119,12 @@
   (init-floor *stage-width* *stage-height* *seed*)
   (let ((pos (spawn-pos)))
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
-  (loop repeat 5 do
+  (loop repeat 10 do
     (let ((pos (random-pos)))
-      (add-object (make-instance (if (zerop (random 2)) 'goblin 'goblin-fighter)
+      (add-object (make-instance (random-elt '(goblin goblin-fighter goblin-brawler))
                                  :x (x pos)
                                  :y (y pos)))))
-  (loop repeat 10 do
+  (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'warrior
                                  :x (x pos)
