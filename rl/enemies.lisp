@@ -1,6 +1,6 @@
 (in-package #:rl)
 
-(defclass enemy (alive solid visible)
+(define-class enemy (alive solid visible)
   ((%enemy-state :initarg :enemy-state
                  :initform :sleeping
                  :accessor enemy-state)
@@ -8,7 +8,7 @@
                   :accessor wandering-to)
    (%view-distance :initform 10 :initarg :view-distance :accessor view-distance)))
 
-(defclass goblin (enemy humanoid)
+(define-class goblin (enemy humanoid)
   ((%stamina :initform 5)
    (%resistances :initform (list (make-resistance 'fire 0.8)))
    (%strength :initform 3)
@@ -19,14 +19,14 @@
    (%faith :initform 1)
    (%vitality :initform 3)))
 
-(defclass goblin-fighter (goblin)
+(define-class goblin-fighter (goblin)
   ((%inventory :initform (make-inventory (make-instance 'dagger)))))
 
-(defclass goblin-brawler (goblin)
+(define-class goblin-brawler (goblin)
   ((%strength :initform 10)
    (%vitality :initform 10)))
 
-(defclass warrior (enemy humanoid)
+(define-class warrior (enemy humanoid)
   ((%strength :initform 10)
    (%dexterity :initform 5)
    (%endurance :initform 10)
@@ -37,7 +37,7 @@
    (%inventory :initform (make-inventory (make-instance 'sword)
                                          (make-instance 'kite-shield)))))
 
-(defclass rat (enemy)
+(define-class rat (enemy)
   ((%strength :initform 2)
    (%dexterity :initform 2)
    (%endurance :initform 2)

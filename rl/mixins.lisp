@@ -1,28 +1,28 @@
 (in-package #:rl)
 
-(defclass cooldown ()
+(define-class cooldown ()
   ((%cooldown :initform 0 :accessor cooldown)))
 
-(defclass moveable (pos cooldown)
+(define-class moveable (pos cooldown)
   ((%dx :initarg :dx :initform 0 :accessor dx)
    (%dy :initarg :dy :initform 0 :accessor dy)
    (%friction :initarg :friction :initform 1 :accessor friction)
    (%move-cooldown :initarg :move-cooldown :initform 5 :accessor move-cooldown)))
 
-(defclass visible (pos)
+(define-class visible (pos)
   ())
 
-(defclass can-see ()
+(define-class can-see ()
   ())
 
-(defclass solid () ())
+(define-class solid () ())
 
-(defclass inventory ()
+(define-class inventory ()
   ((%inventory :initarg :inventory
                :initform '()
                :accessor inventory)))
 
-(defclass resistance ()
+(define-class resistance ()
   ((%resistance-to :initarg :resistance-to
                    :initform (error "resistence-to must be specified")
                    :accessor resistance-to)
@@ -30,37 +30,37 @@
                        :initform 1.2
                        :accessor resistance-amount)))
 
-(defclass right-arm ()
+(define-class right-arm ()
   ((%equip-right-arm :initarg :equip-right-arm :initform nil :accessor equip-right-arm)))
 
-(defclass left-arm ()
+(define-class left-arm ()
   ((%equip-left-arm :initarg :equip-left-arm :initform nil :accessor equip-left-arm)))
 
-(defclass damage ()
+(define-class damage ()
   ((%damage :initarg :damage :initform (error "damage must be set") :accessor damage)))
 
-(defclass stamina-use ()
+(define-class stamina-use ()
   ((%stamina-use :initarg :damage :accessor stamina-use)))
 
-(defclass modifier ()
+(define-class modifier ()
   ())
 
-(defclass fire (modifier)
+(define-class fire (modifier)
   ())
 
-(defclass ice (modifier)
+(define-class ice (modifier)
   ())
 
-(defclass deleted ()
+(define-class deleted ()
   ())
 
-(defclass running (pos)
+(define-class running (pos)
   ())
 
-(defclass opaque ()
+(define-class opaque ()
   ())
 
-(defclass alive (moveable)
+(define-class alive (moveable)
   ((%vitality :initform (error "vitality must be set") :accessor vitality)
    (%strength :initform (error "strength must be set") :accessor strength)
    (%dexterity :initform (error "dexterity must be set") :accessor dexterity)
@@ -101,7 +101,7 @@
     (setf (previous-stamina obj) (stamina obj)))
   (setf (slot-value obj '%stamina) (min (max-stamina obj) new-value)))
 
-(defclass humanoid (inventory right-arm left-arm)
+(define-class humanoid (inventory right-arm left-arm)
   ())
 
 (defmethod initialize-instance :after ((obj humanoid) &key)
@@ -114,7 +114,7 @@
                                      return item)))
 
 (defun make-resistance (type &optional amount)
-  (let ((resistance (make-instance 'resistance :resistance-to (find-class type))))
+  (let ((resistance (make-instance 'resistance :resistance-to type)))
     (when amount
       (setf (resistance-amount resistance) amount))
     resistance))

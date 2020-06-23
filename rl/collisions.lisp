@@ -83,7 +83,7 @@
                    (damage weapon))))
     (dolist (modifier (get-modifiers weapon))
       (let ((modifier-damage 1.2))
-        (when-let ((resistance (find modifier resistances :key 'resistance-to)))
+        (when-let ((resistance (find (class-name modifier) resistances :key 'resistance-to :test #'string=)))
           (setf modifier-damage (- (* 2 modifier-damage)
                                    (* (resistance-amount resistance) modifier-damage))))
         (setf damage (* damage 0.95 modifier-damage))))

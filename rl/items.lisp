@@ -1,22 +1,22 @@
 (in-package #:rl)
 
-(defclass item (visible)
+(define-class item (visible)
   ())
 
-(defclass rechargeable (useable)
+(define-class rechargeable (useable)
   ((%max-charges :initarg :charges
                  :initform (error "max-charges is required")
                  :accessor max-charges)
    (%current-charges :accessor current-charges)))
 
-(defclass useable ()
+(define-class useable ()
   ((%use-cooldown :initform (error "use-cooldown is required")
                   :accessor use-cooldown)))
 
 (defmethod initialize-instance :after ((obj rechargeable) &key)
   (setf (current-charges obj) (max-charges obj)))
 
-(defclass health-potion (rechargeable useable item)
+(define-class health-potion (rechargeable useable item)
   ((%regeneration-amount :initform 40 :reader regeneration-amount)
    (%max-charges :initform 5)
    (%use-cooldown :initform 15)))

@@ -3,28 +3,28 @@
 (defvar *pos-cache*)
 (defvar *game-objects*)
 
-(defclass spawn (pos)
+(define-class spawn (pos)
   ())
 
-(defclass wall (visible solid opaque)
+(define-class wall (visible solid opaque)
   ())
 
-(defclass grass (visible)
+(define-class grass (visible)
   ())
 
-(defclass tree (visible solid opaque)
+(define-class tree (visible solid opaque)
   ())
 
-(defclass water (visible solid)
+(define-class water (visible solid)
   ())
 
-(defclass shallow-water (visible)
+(define-class shallow-water (visible)
   ())
 
-(defclass sand (visible)
+(define-class sand (visible)
   ())
 
-(defclass door (visible)
+(define-class door (visible)
   ())
 
 (defun should-display (obj)

@@ -3,7 +3,7 @@
 (defvar *player*)
 (defun player () *player*)
 
-(defclass player (alive visible solid humanoid)
+(define-class player (alive visible solid humanoid)
   ((%strength :initform 5)
    (%dexterity :initform 5)
    (%endurance :initform 5)

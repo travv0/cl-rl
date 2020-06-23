@@ -1,6 +1,6 @@
 (in-package #:rl)
 
-(defclass pos ()
+(define-class pos ()
   ((%x :initarg :x :initform 0 :reader x)
    (%y :initarg :y :initform 0 :reader y)))
 
