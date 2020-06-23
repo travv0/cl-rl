@@ -140,6 +140,10 @@
                                  :x (x pos)
                                  :y (y pos)))))
 
+  (save-world)
+  (unload-world)
+  (ensure-chunks-loaded (chunk-positions-to-show))
+
   (update *player*)
   (update-can-see))
 
@@ -222,7 +226,8 @@
                          else collect obj))
 
              (when (zerop (cooldown *player*))
-               (update-can-see))
+               (update-can-see)
+               (update-chunks))
 
              (incf *turn*)
           while (plusp (cooldown *player*))))

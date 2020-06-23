@@ -36,13 +36,13 @@
 (defparameter *chunk-width* 10)
 (defparameter *chunk-height* 10)
 
-(defun player-chunk-pos ()
+(defun player-chunk ()
   (with-accessors ((x x) (y y)) *player*
     (pos (* (floor x *chunk-width*) *chunk-width*)
          (* (floor y *chunk-height*) *chunk-height*))))
 
-(defun chunk-positions-to-show ()
-  (let ((player-chunk-pos (player-chunk-pos))
+(defun chunks-to-show ()
+  (let ((player-chunk (player-chunk))
         (diffs (remove-duplicates (tu:make-combos 2 (list (- *chunk-width*)
                                                           (- *chunk-height*)
                                                           0
@@ -51,7 +51,7 @@
                                                           *chunk-height*))
                                   :test #'equal)))
     (loop for diff in diffs
-          for pos = (add player-chunk-pos (to-pos diff))
+          for pos = (add player-chunk (to-pos diff))
           when (and (<= 0 (x pos) (1- *stage-width*))
                     (<= 0 (y pos) (1- *stage-height*)))
             collect pos)))
@@ -62,13 +62,18 @@
                     collect (pos x y))))
 
 (defun chunk-range-to-show ()
-  (let ((positions (chunk-positions-to-show)))
+  (let ((positions (chunks-to-show)))
     (loop for pos in positions
           minimizing (x pos) into min-x
           minimizing (y pos) into min-y
           maximizing (+ (x pos) *chunk-width*) into max-x
           maximizing (+ (y pos) *chunk-width*) into max-y
           finally (return (list min-x min-y max-x max-y)))))
+
+(defun chunks-to-unload ()
+  (loop for chunk in (all-chunks)
+        unless (member chunk (chunks-to-show) :test #'same)
+          collect chunk))
 
 (defun save-and-unload-chunk (chunk-pos)
   (save-chunk chunk-pos)
@@ -80,18 +85,21 @@
       (with-output-to-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y)
                               :if-exists :overwrite
                               :if-does-not-exist :create)
-        (prin1 (ms:marshal (loop for y from chunk-y below (+ chunk-y *chunk-height*)
-                                 nconc (loop for x from chunk-x below (+ chunk-x *chunk-width*)
-                                             nconc (aref *pos-cache* x y))))
+        (prin1 (ms:marshal (loop for y from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*)
+                                 nconc (loop for x from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*)
+                                             nconc (reverse (aref *pos-cache* x y)))))
                s)))))
 
 (defun save-world ()
   (loop for chunk in (all-chunks) do (save-chunk chunk)))
 
+(defun unload-world ()
+  (clear-objects))
+
 (defun unload-chunk (chunk-pos)
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
-    (loop for y from chunk-y below (+ chunk-y *chunk-height*) do
-      (loop for x from chunk-x below (+ chunk-x *chunk-width*) do
+    (loop for y from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*) do
+      (loop for x from chunk-x below (min (+ chunk-y *chunk-width*) *stage-width*) do
         (clear-position (pos x y))))))
 
 (defun load-chunk (chunk-pos)
@@ -102,9 +110,19 @@
           (loop for obj in objs do
             (add-object obj)))))))
 
-(defun ensure-chunks (chunk-positions)
+(defun ensure-chunks-loaded (chunk-positions)
   (loop for pos in chunk-positions
-        unless pos do (load-chunk pos)))
+        unless (aref *pos-cache* (x pos) (y pos))
+          do (load-chunk pos)))
+
+(defun ensure-chunks-unloaded (chunk-positions)
+  (loop for pos in chunk-positions
+        when (aref *pos-cache* (x pos) (y pos))
+          do (save-and-unload-chunk (print pos))))
+
+(defun update-chunks ()
+  (ensure-chunks-loaded (chunk-positions-to-show))
+  (ensure-chunks-unloaded (chunks-to-unload)))
 
 (defun grass-area-noise (x y seed)
   (let ((noise (* (black-tie:perlin-noise-sf (/ x 250.0) (/ y 250.0) (/ seed 1.0)) 0.5)))
