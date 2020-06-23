@@ -33,8 +33,8 @@
 (defparameter *stage-width* 100)
 (defparameter *stage-height* 100)
 
-(defparameter *chunk-width* 10)
-(defparameter *chunk-height* 10)
+(defparameter *chunk-width* 40)
+(defparameter *chunk-height* 40)
 
 (defun player-chunk ()
   (with-accessors ((x x) (y y)) *player*
@@ -81,6 +81,7 @@
 
 (defun save-chunk (chunk-pos)
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
+    (format t "saving chunk ~d, ~d~%" chunk-x chunk-y)
     (with-standard-io-syntax
       (with-output-to-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y)
                               :if-exists :overwrite
@@ -98,12 +99,14 @@
 
 (defun unload-chunk (chunk-pos)
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
+    (format t "unloading chunk ~d, ~d~%" chunk-x chunk-y)
     (loop for y from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*) do
-      (loop for x from chunk-x below (min (+ chunk-y *chunk-width*) *stage-width*) do
+      (loop for x from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*) do
         (clear-position (pos x y))))))
 
 (defun load-chunk (chunk-pos)
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
+    (format t "loading chunk ~d, ~d~%" chunk-x chunk-y)
     (with-standard-input-syntax
       (with-input-from-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y))
         (let ((objs (ms:unmarshal (read s))))
@@ -118,11 +121,17 @@
 (defun ensure-chunks-unloaded (chunk-positions)
   (loop for pos in chunk-positions
         when (aref *pos-cache* (x pos) (y pos))
-          do (save-and-unload-chunk (print pos))))
+          do (save-and-unload-chunk pos)))
+
+(defvar *chunk-lock* (bt:make-lock))
+
+(defun ensure-chunks ()
+  (bt:with-lock-held (*chunk-lock*)
+    (ensure-chunks-loaded (chunks-to-show))
+    (ensure-chunks-unloaded (chunks-to-unload))))
 
 (defun update-chunks ()
-  (ensure-chunks-loaded (chunk-positions-to-show))
-  (ensure-chunks-unloaded (chunks-to-unload)))
+  (bt:make-thread #'ensure-chunks))
 
 (defun grass-area-noise (x y seed)
   (let ((noise (* (black-tie:perlin-noise-sf (/ x 250.0) (/ y 250.0) (/ seed 1.0)) 0.5)))

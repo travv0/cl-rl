@@ -170,12 +170,14 @@
 
 (defun display-debug-info (turn seed width height)
   (declare (ignorable width height))
-  (with-text-blended (texture (format nil "turn: ~d | seed: ~4d" turn seed))
-    (sdl2:render-copy *renderer* texture
-                      :dest-rect (sdl2:make-rect (- width (sdl2:texture-width texture) 5)
-                                                 5
-                                                 (sdl2:texture-width texture)
-                                                 (sdl2:texture-height texture)))))
+  (let ((chunk (rl::player-chunk)))
+    (with-text-blended (texture (format nil "pos: ~d, ~d (~d, ~d) | turn: ~d | seed: ~4d"
+                                        *player-x* *player-y* (rl::x chunk) (rl::y chunk) turn seed))
+      (sdl2:render-copy *renderer* texture
+                        :dest-rect (sdl2:make-rect (- width (sdl2:texture-width texture) 5)
+                                                   5
+                                                   (sdl2:texture-width texture)
+                                                   (sdl2:texture-height texture))))))
 
 (defun display-log (count log width height)
   (declare (ignorable width height))

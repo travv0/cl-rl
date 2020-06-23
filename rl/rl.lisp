@@ -121,14 +121,14 @@
     (setf *player* (make-instance 'player :x (x pos) :y (y pos))))
   (loop repeat 10 do
     (let ((pos (random-pos)))
-      (add-object (make-instance (random-elt '(goblin goblin-fighter goblin-brawler))
+      (add-object (make-instance 'goblin
                                  :x (x pos)
                                  :y (y pos)))))
-  (loop repeat 5 do
-    (let ((pos (random-pos)))
-      (add-object (make-instance 'warrior
-                                 :x (x pos)
-                                 :y (y pos)))))
+  ;; (loop repeat 5 do
+  ;;   (let ((pos (random-pos)))
+  ;;     (add-object (make-instance 'warrior
+  ;;                                :x (x pos)
+  ;;                                :y (y pos)))))
   (loop repeat 5 do
     (let ((pos (random-pos)))
       (add-object (make-instance 'sword
@@ -142,7 +142,7 @@
 
   (save-world)
   (unload-world)
-  (ensure-chunks-loaded (chunk-positions-to-show))
+  (ensure-chunks-loaded (chunks-to-show))
 
   (update *player*)
   (update-can-see))
