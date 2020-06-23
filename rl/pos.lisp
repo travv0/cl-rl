@@ -16,6 +16,10 @@
   (sqrt (+ (expt (- (x p2) (x p1)) 2)
            (expt (- (y p2) (y p1)) 2))))
 
+(defmethod add ((p1 pos) (p2 pos))
+  (make-instance 'pos :x (+ (x p1) (x p2))
+                      :y (+ (y p1) (y p2))))
+
 (defmethod sub ((p1 pos) (p2 pos))
   (make-instance 'pos :x (- (x p1) (x p2))
                       :y (- (y p1) (y p2))))
@@ -31,6 +35,11 @@
 (defmethod same ((p1 pos) (p2 pos))
   (and (= (x p1) (x p2))
        (= (y p1) (y p2))))
+
+(defun to-pos (pair)
+  (typecase (cdr pair)
+    (cons (pos (first pair) (second pair)))
+    (t (pos (car pair) (cdr pair)))))
 
 (defmethod can-see-p ((origin pos) (target pos))
   (loop for pos in (rest (get-line origin target))
