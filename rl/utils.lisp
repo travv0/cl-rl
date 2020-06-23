@@ -7,12 +7,12 @@
 (defmacro define-class (name direct-superclasses direct-slots &rest options)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (macrolet ((defencoding (class-name)
-                  (c2mop:ensure-finalized
-                   (defclass ,name ,direct-superclasses
-                     ,direct-slots
-                     ,@options))
                   `(defmethod ms:class-persistent-slots ((self ,class-name))
                      ',(mapcar #'c2mop:slot-definition-name (c2mop:class-slots (find-class class-name))))))
+       (c2mop:ensure-finalized
+        (defclass ,name ,direct-superclasses
+          ,direct-slots
+          ,@options))
        (defencoding ,name))))
 
 (defmethod ms:class-persistent-slots ((self mixin-object))

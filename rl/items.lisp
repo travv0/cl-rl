@@ -3,15 +3,15 @@
 (define-class item (visible)
   ())
 
+(define-class useable ()
+  ((%use-cooldown :initform (error "use-cooldown is required")
+                  :accessor use-cooldown)))
+
 (define-class rechargeable (useable)
   ((%max-charges :initarg :charges
                  :initform (error "max-charges is required")
                  :accessor max-charges)
    (%current-charges :accessor current-charges)))
-
-(define-class useable ()
-  ((%use-cooldown :initform (error "use-cooldown is required")
-                  :accessor use-cooldown)))
 
 (defmethod initialize-instance :after ((obj rechargeable) &key)
   (setf (current-charges obj) (max-charges obj)))

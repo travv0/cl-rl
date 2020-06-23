@@ -9,16 +9,17 @@
                #:str
                #:black-tie
                #:dynamic-mixins
-               #:travv0.utils)
+               #:travv0.utils
+               #:marshal)
   :components ((:file "package")
                (:file "utils")
-               (:file "level")
                (:file "pos")
                (:file "mixins")
+               (:file "level")
                (:file "astar")
+               (:file "items")
                (:file "player")
                (:file "enemies")
-               (:file "items")
                (:file "weapons")
                (:file "collisions")
                (:file "rl")))
