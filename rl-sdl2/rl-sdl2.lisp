@@ -253,7 +253,7 @@
      (unwind-protect (progn ,@body)
        (sdl2-ttf:close-font ,var))))
 
-(defun main ()
+(defun main (&optional seed)
   (load-keys)
   (sdl2:with-init (:everything)
     (sdl2-image:init '(:png))
@@ -264,7 +264,7 @@
              (handler-case
                  (with-font (*font* "rl-sdl2/EBGaramond-Medium.ttf" 18)
                    (init-textures)
-                   (rl:initialize)
+                   (rl:initialize seed)
                    (update-and-display nil)
 
                    (let ((shift-held nil))

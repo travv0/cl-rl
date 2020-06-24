@@ -180,9 +180,9 @@
       (loop for y from (1- height) downto 0 do
         (loop for x below width do
           (let* ((noise (grass-area-noise x y seed)))
-            (cond ((< noise -0.12) (add-object (make-water x y)))
-                  ((< noise -0.1) (add-object (make-water x y :shallow t)))
-                  ((< noise -0.08) (add-object (make-sand x y)))
+            (cond ((< noise -0.02) (add-object (make-water x y)))
+                  ((< noise -0.0) (add-object (make-water x y :shallow t)))
+                  ((< noise 0.02) (add-object (make-sand x y)))
                   (t
                    (add-object (make-grass x y))
                    (when (> noise 0.1)
