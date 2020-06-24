@@ -30,11 +30,11 @@
 (defun should-display (obj)
   (typep obj 'can-see))
 
-(defparameter *stage-width* 100)
-(defparameter *stage-height* 100)
+(defparameter *stage-width* 1000)
+(defparameter *stage-height* 1000)
 
 (defparameter *chunk-width* 40)
-(defparameter *chunk-height* 40)
+(defparameter *chunk-height* 20)
 
 (defun player-chunk ()
   (with-accessors ((x x) (y y)) *player*
@@ -43,13 +43,15 @@
 
 (defun chunks-to-show ()
   (let ((player-chunk (player-chunk))
-        (diffs (remove-duplicates (tu:make-combos 2 (list (- *chunk-width*)
-                                                          (- *chunk-height*)
-                                                          0
-                                                          0
-                                                          *chunk-width*
-                                                          *chunk-height*))
-                                  :test #'equal)))
+        (diffs (list (list (- *chunk-width*) (- *chunk-height*))
+                     (list 0 (- *chunk-height*))
+                     (list *chunk-width* (- *chunk-height*))
+                     (list *chunk-width* 0)
+                     (list *chunk-width* *chunk-height*)
+                     (list 0 *chunk-height*)
+                     (list (- *chunk-width*) *chunk-height*)
+                     (list (- *chunk-width*) 0)
+                     (list 0 0))))
     (loop for diff in diffs
           for pos = (add player-chunk (to-pos diff))
           when (and (<= 0 (x pos) (1- *stage-width*))
@@ -57,8 +59,8 @@
             collect pos)))
 
 (defun all-chunks ()
-  (loop for y from 0 below *stage-width* by *chunk-width*
-        nconc (loop for x from 0 below *stage-height* by *chunk-height*
+  (loop for y from 0 below *stage-height* by *chunk-height*
+        nconc (loop for x from 0 below *stage-width* by *chunk-width*
                     collect (pos x y))))
 
 (defun chunk-range-to-show ()
@@ -81,7 +83,6 @@
 
 (defun save-chunk (chunk-pos)
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
-    (format t "saving chunk ~d, ~d~%" chunk-x chunk-y)
     (with-standard-io-syntax
       (with-output-to-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y)
                               :if-exists :overwrite
@@ -99,14 +100,12 @@
 
 (defun unload-chunk (chunk-pos)
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
-    (format t "unloading chunk ~d, ~d~%" chunk-x chunk-y)
     (loop for y from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*) do
       (loop for x from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*) do
         (clear-position (pos x y))))))
 
 (defun load-chunk (chunk-pos)
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
-    (format t "loading chunk ~d, ~d~%" chunk-x chunk-y)
     (with-standard-input-syntax
       (with-input-from-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y))
         (let ((objs (ms:unmarshal (read s))))
@@ -240,7 +239,14 @@
     (remove-if-not (op (typep _ 'visible))
                    (aref *pos-cache* (x pos) (y pos)))))
 
+(defun get-object-at-pos (pos)
+  (when (and (<= 0 (x pos) (1- *stage-width*))
+             (<= 0 (y pos) (1- *stage-height*)))
+    (find-if (op (typep _ 'visible))
+             (aref *pos-cache* (x pos) (y pos)))))
+
 (defun get-visible-objects-at-pos (pos)
+  (declare (optimize speed))
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
     (remove-if-not #'should-display (aref *pos-cache* (x pos) (y pos)))))

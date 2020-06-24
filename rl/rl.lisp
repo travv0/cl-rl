@@ -91,14 +91,16 @@
            :log *log*
            :turn *turn*
            :seed *seed*
-           :objects (loop with result = '()
-                          for y below (array-dimension *pos-cache* 1)
-                          finally (return result)
-                          do (loop for x below (array-dimension *pos-cache* 0)
-                                   for objs = (get-visible-objects-at-pos (pos x y))
-                                   when objs
-                                     do (setf result (append (reverse (mapcar #'dump-object objs))
-                                                             result))))))
+           :objects
+           (destructuring-bind (start-x start-y end-x end-y) (chunk-range-to-show)
+             (loop with result = '()
+                   for y from start-y below end-y
+                   finally (return result)
+                   do (loop for x from start-x below end-x
+                            for objs = (get-objects-at-pos (pos x y))
+                            when (typep (first objs) 'can-see)
+                              do (setf result (append (reverse (mapcar #'dump-object objs))
+                                                      result)))))))
     (:inventory
      (list :inventory (loop for (char . item) in (inventory *player*)
                             collect (cons char (dump-object item

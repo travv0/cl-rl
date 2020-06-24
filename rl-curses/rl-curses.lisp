@@ -196,8 +196,8 @@
 (defun draw-play (data width height)
   (declare (ignorable width height))
   (destructuring-bind (&key ((:player (&whole player
-                                              &key ((:attributes player-attributes))
-                                              &allow-other-keys)))
+                                       &key ((:attributes player-attributes))
+                                       &allow-other-keys)))
                          objects log turn seed)
       data
     (let ((*player-x* (getf player :x))
@@ -212,11 +212,14 @@
                        (getf player-attributes :max-stamina)
                        (getf player-attributes :previous-stamina))
       (display-log 5 log)
-      (let ((turn-string (format nil "turn: ~d | seed: ~d" turn seed)))
-        (charms:write-string-at-point charms:*standard-window*
-                                      turn-string
-                                      (- width (length turn-string))
-                                      0)))))
+
+      (let ((chunk (rl::player-chunk)))
+        (let ((turn-string (format nil "pos: ~d, ~d (~d, ~d) | turn: ~d | seed: ~4d"
+                                   *player-x* *player-y* (rl::x chunk) (rl::y chunk) turn seed)))
+          (charms:write-string-at-point charms:*standard-window*
+                                        turn-string
+                                        (- width (length turn-string))
+                                        0))))))
 
 (defun draw-inventory (data width height)
   (declare (ignorable width height))

@@ -17,26 +17,28 @@
    (%view-distance :initform 40 :accessor view-distance)))
 
 (defun update-can-see ()
-  (loop for y below (array-dimension *pos-cache* 1) do
-    (loop for x below (array-dimension *pos-cache* 0) do
-      (when (or (zerop x)
-                (= x (1- *stage-width*))
-                (zerop y)
-                (= y (1- *stage-height*)))
-        (loop for obj in (get-objects-at-pos *player*) do
-          (ensure-mix obj 'can-see))
-        (block pos-loop
-          (loop with hit-opaque = nil
-                for distance from (view-distance *player*) downto 0
-                for pos in (rest (get-line *player* (pos x y)))
-                do (loop for obj in (get-objects-at-pos pos)
-                         unless (plusp distance)
-                           do (return-from pos-loop)
-                         do (ensure-mix obj 'can-see)
-                            (when (typep obj 'opaque)
-                              (setf hit-opaque t)))
-                   (when hit-opaque
-                     (return-from pos-loop)))))))
+  (destructuring-bind (start-x start-y end-x end-y) (chunk-range-to-show)
+    (loop for y from start-y below end-y do
+      (loop for x from start-x below end-x do
+        (when (or (= x start-x)
+                  (= x (1- end-x))
+                  (= y start-y)
+                  (= y (1- end-y)))
+          (loop for obj in (get-objects-at-pos *player*) do
+            (ensure-mix obj 'can-see))
+          (block pos-loop
+            (loop with hit-opaque = nil
+                  for distance from (view-distance *player*) downto 0
+                  for pos in (rest (get-line *player* (pos x y)))
+                  do (when-let ((obj (get-object-at-pos pos)))
+                       (unless (plusp distance)
+                         (return-from pos-loop))
+                       (unless (typep obj 'can-see)
+                         (ensure-mix obj 'can-see))
+                       (when (typep obj 'opaque)
+                         (setf hit-opaque t)))
+                     (when hit-opaque
+                       (return-from pos-loop))))))))
   (with-accessors ((x x) (y y)) *player*
     (flet ((visible-pos (check-x check-y)
              (and (not (typep (get-visible-object-at-pos (pos check-x check-y)) 'opaque))
