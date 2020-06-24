@@ -27,14 +27,17 @@
 (define-class door (visible)
   ())
 
-(defun should-display (obj)
-  (typep obj 'can-see))
+(defmethod should-display (obj)
+  nil)
+
+(defmethod should-display ((obj visible))
+  (can-see obj))
 
 (defparameter *stage-width* 1000)
 (defparameter *stage-height* 1000)
 
 (defparameter *chunk-width* 40)
-(defparameter *chunk-height* 20)
+(defparameter *chunk-height* 40)
 
 (defun player-chunk ()
   (with-accessors ((x x) (y y)) *player*

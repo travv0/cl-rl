@@ -24,8 +24,7 @@
                   (= x (1- end-x))
                   (= y start-y)
                   (= y (1- end-y)))
-          (loop for obj in (get-objects-at-pos *player*) do
-            (ensure-mix obj 'can-see))
+          (setf (can-see *player*) t)
           (block pos-loop
             (loop with hit-opaque = nil
                   for distance from (view-distance *player*) downto 0
@@ -33,8 +32,8 @@
                   do (when-let ((obj (get-object-at-pos pos)))
                        (unless (plusp distance)
                          (return-from pos-loop))
-                       (unless (typep obj 'can-see)
-                         (ensure-mix obj 'can-see))
+                       (unless (can-see obj)
+                         (setf (can-see obj) t))
                        (when (typep obj 'opaque)
                          (setf hit-opaque t)))
                      (when hit-opaque
@@ -42,10 +41,10 @@
   (with-accessors ((x x) (y y)) *player*
     (flet ((visible-pos (check-x check-y)
              (and (not (typep (get-visible-object-at-pos (pos check-x check-y)) 'opaque))
-                  (some (op (typep _1 'can-see))
+                  (some (op (can-see _))
                         (get-objects-at-pos (pos check-x check-y))))))
       (loop for obj in *game-objects*
-            when (and (typep obj 'opaque) (not (typep obj 'can-see)))
+            when (and (typep obj 'opaque) (not (can-see obj)))
               do (when (or (and (>= x (x obj))
                                 (>= y (y obj))
                                 (and (visible-pos (1+ (x obj)) (y obj))
@@ -62,4 +61,4 @@
                                 (<= y (y obj))
                                 (and (visible-pos (1+ (x obj)) (y obj))
                                      (visible-pos (x obj) (1- (y obj))))))
-                   (ensure-mix obj 'can-see))))))
+                   (setf (can-see obj) t))))))

@@ -98,7 +98,7 @@
                    finally (return result)
                    do (loop for x from start-x below end-x
                             for objs = (get-objects-at-pos (pos x y))
-                            when (typep (first objs) 'can-see)
+                            when (can-see (first objs))
                               do (setf result (append (reverse (mapcar #'dump-object objs))
                                                       result)))))))
     (:inventory
@@ -212,7 +212,7 @@
                (initialize))
 
              (let ((*game-objects* (cons *player* *game-objects*)))
-               (mapc (op (delete-from-mix _ 'can-see)) *game-objects*)
+               (mapc (lambda (obj) (setf (can-see obj) nil)) *game-objects*)
 
                (dolist (obj *game-objects*)
                  (unless (typep obj 'deleted)

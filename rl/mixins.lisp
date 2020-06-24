@@ -10,10 +10,13 @@
    (%move-cooldown :initarg :move-cooldown :initform 5 :accessor move-cooldown)))
 
 (define-class visible (pos)
-  ())
+  ((%can-see :initform nil :accessor can-see)))
 
-(define-class can-see ()
-  ())
+(defmethod can-see (obj)
+  nil)
+
+(defmethod (setf can-see) (value obj)
+  nil)
 
 (define-class solid () ())
 
