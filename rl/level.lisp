@@ -161,7 +161,7 @@
                                                             (< 0 (y obj) (1- *stage-height*))))
                                          *game-objects*)))
         (directions (remove-duplicates
-                     (tu:make-combos 2 '(-1 -1 0 1 1))
+                     (tu:combinations '(-1 -1 0 1 1) 2)
                      :test #'equal)))
     (clear-position tree)
     (add-object (make-water (x tree) (y tree) :shallow t))
