@@ -13,9 +13,11 @@
    (%inventory :initform (make-inventory (make-instance 'health-potion :charges 5)
                                          (make-instance 'sword)
                                          (make-instance 'kite-shield)))
-   (%view-distance :initform 40 :accessor view-distance)))
+   (%view-distance :initform 40 :accessor view-distance))
+  (:documentation "the class of the player character"))
 
 (defun update-can-see ()
+  "set `can-see' to t for any objects visible from the player's current position"
   (multiple-value-bind (start-x start-y end-x end-y) (chunk-range-to-show)
     (loop for y from start-y below end-y do
       (loop for x from start-x below end-x do
@@ -37,6 +39,9 @@
                          (setf hit-opaque t)))
                      (when hit-opaque
                        (return-from pos-loop))))))))
+  ;; if an object is opaque but not can-see, set can-see to t if it
+  ;; has a visible object next to it so that there aren't random
+  ;; invisible positions in walls
   (with-accessors ((x x) (y y)) *player*
     (flet ((visible-pos (check-x check-y)
              (and (not (typep (get-visible-object-at-pos (pos check-x check-y)) 'opaque))
