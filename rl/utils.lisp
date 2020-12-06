@@ -5,6 +5,8 @@
         collecting (code-char c)))
 
 (defmacro define-class (name direct-superclasses direct-slots &rest options)
+  "used the same way as `defclass', but any classes that need to be
+serialized for writing to disk should use this instead"
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (macrolet ((defencoding (class-name)
                   `(defmethod ms:class-persistent-slots ((self ,class-name))
