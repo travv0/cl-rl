@@ -13,7 +13,9 @@
   ((%can-see :initform nil :accessor can-see)))
 
 (defgeneric can-see (obj)
-  (:documentation "return non-nil if object can be seen from player's location"))
+  (:documentation "return non-nil if object can be seen from player's
+  location. if object doesn't inherit from `visible', this should
+  return nil and setting it should be a no-op"))
 
 (defmethod can-see (obj)
   nil)
