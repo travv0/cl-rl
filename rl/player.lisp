@@ -1,7 +1,6 @@
 (in-package #:rl)
 
 (defvar *player*)
-(defun player () *player*)
 
 (define-class player (alive visible solid humanoid)
   ((%strength :initform 5)
