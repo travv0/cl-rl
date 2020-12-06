@@ -2,7 +2,9 @@
 
 (define-class pos ()
   ((%x :initarg :x :initform 0 :reader x)
-   (%y :initarg :y :initform 0 :reader y)))
+   (%y :initarg :y :initform 0 :reader y))
+  (:documentation "represents a position as a 2d coordinate. anything
+  with a position should inherit from this class"))
 
 (defmethod print-object ((p pos) stream)
   (print-unreadable-object (p stream :type t)
@@ -37,11 +39,13 @@
        (= (y p1) (y p2))))
 
 (defun to-pos (pair)
+  "converts a 2-element list or a dotted pair to a `pos'"
   (typecase (cdr pair)
     (cons (pos (first pair) (second pair)))
     (t (pos (car pair) (cdr pair)))))
 
 (defmethod can-see-p ((origin pos) (target pos))
+  "returns non-nil if `target' pos can be seen from `origin' pos"
   (loop for pos in (rest (get-line origin target))
         do (loop for obj in (get-objects-at-pos pos)
                  when (typep obj 'opaque)
@@ -49,6 +53,8 @@
         finally (return t)))
 
 (defmethod get-line ((start pos) (end pos))
+  "get the straight line between `start' and `end', represented as a
+list of `pos's"
   (declare (optimize speed))
   (let* ((x1 (x start))
          (y1 (y start))
@@ -88,6 +94,8 @@
           (reverse result)))))
 
 (defmethod update-pos ((obj pos) new-x new-y)
+  "update the position of an object. use this instead of setting
+object's x and y coordinates directly."
   (let ((new-x (clamp new-x 0 (1- *stage-width*)))
         (new-y (clamp new-y 0 (1- *stage-height*))))
     (with-accessors ((x x) (y y)) obj

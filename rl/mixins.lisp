@@ -12,6 +12,9 @@
 (define-class visible (pos)
   ((%can-see :initform nil :accessor can-see)))
 
+(defgeneric can-see (obj)
+  (:documentation "return non-nil if object can be seen from player's location"))
+
 (defmethod can-see (obj)
   nil)
 
