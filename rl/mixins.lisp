@@ -143,13 +143,22 @@
                   (delete-from-mix obj 'running)
                   (return))))
 
-      (unless (and (zerop dx) (zerop dy))
-        (let ((move-cooldown (if (typep obj 'running)
-                                 (round (* move-cooldown (if (< (stamina obj) *running-stamina*)
-                                                             2
-                                                             2/3)))
-                                 move-cooldown)))
-          (incf cooldown move-cooldown))))
+      (flet ((modify-for-running (cooldown)
+               (if (typep obj 'running)
+                   (round (* cooldown
+                             (if (< (stamina obj) *running-stamina*)
+                                 2
+                                 2/3)))
+                   cooldown))
+             (modify-for-terrain (cooldown x y)
+               (if-let ((pos (get-terrain-at-pos (pos x y))))
+                 (round (* cooldown (cooldown-modifier pos)))
+                 cooldown)))
+        (unless (and (zerop dx) (zerop dy))
+          (let ((move-cooldown (~> move-cooldown
+                                   modify-for-running
+                                   (modify-for-terrain x y))))
+            (incf cooldown move-cooldown)))))
 
     (update-pos obj (+ x (round dx)) (+ y (round dy)))
 

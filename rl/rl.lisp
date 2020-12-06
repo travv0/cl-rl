@@ -85,6 +85,7 @@
 (defvar *state* :play)
 
 (defun dump-state ()
+  "dump the game state to a format for the front ends to use for rendering"
   (ecase *state*
     (:play
      (list :player (dump-object *player*)

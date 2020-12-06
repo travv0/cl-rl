@@ -3,13 +3,16 @@
 (defvar *pos-cache*)
 (defvar *game-objects*)
 
+(define-class terrain ()
+  ((%cooldown-modifier :initarg :cooldown-modifier :initform 1 :accessor cooldown-modifier)))
+
 (define-class spawn (pos)
   ())
 
 (define-class wall (visible solid opaque)
   ())
 
-(define-class grass (visible)
+(define-class grass (terrain visible)
   ())
 
 (define-class tree (visible solid opaque)
@@ -18,11 +21,11 @@
 (define-class water (visible solid)
   ())
 
-(define-class shallow-water (visible)
-  ())
+(define-class shallow-water (terrain visible)
+  ((%cooldown-modifier :initform 1.5)))
 
-(define-class sand (visible)
-  ())
+(define-class sand (terrain visible)
+  ((%cooldown-modifier :initform 1.2)))
 
 (define-class door (visible)
   ())
@@ -258,6 +261,14 @@
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
     (find-if #'should-display (aref *pos-cache* (x pos) (y pos)))))
+
+(defun terrain-p (pos)
+  (typep pos 'terrain))
+
+(defun get-terrain-at-pos (pos)
+  (when (and (<= 0 (x pos) (1- *stage-width*))
+             (<= 0 (y pos) (1- *stage-height*)))
+    (find-if #'terrain-p (aref *pos-cache* (x pos) (y pos)))))
 
 (defun random-pos ()
   (loop for x = (random *stage-width*)
