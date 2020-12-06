@@ -76,7 +76,7 @@
           minimizing (y pos) into min-y
           maximizing (+ (x pos) *chunk-width*) into max-x
           maximizing (+ (y pos) *chunk-width*) into max-y
-          finally (return (list min-x min-y max-x max-y)))))
+          finally (return (values min-x min-y max-x max-y)))))
 
 (defun chunks-to-unload ()
   (loop for chunk in (all-chunks)

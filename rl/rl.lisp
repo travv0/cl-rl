@@ -93,7 +93,7 @@
            :turn *turn*
            :seed *seed*
            :objects
-           (destructuring-bind (start-x start-y end-x end-y) (chunk-range-to-show)
+           (multiple-value-bind (start-x start-y end-x end-y) (chunk-range-to-show)
              (loop with result = '()
                    for y from start-y below end-y
                    finally (return result)

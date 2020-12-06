@@ -17,7 +17,7 @@
    (%view-distance :initform 40 :accessor view-distance)))
 
 (defun update-can-see ()
-  (destructuring-bind (start-x start-y end-x end-y) (chunk-range-to-show)
+  (multiple-value-bind (start-x start-y end-x end-y) (chunk-range-to-show)
     (loop for y from start-y below end-y do
       (loop for x from start-x below end-x do
         (when (or (= x start-x)
