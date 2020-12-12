@@ -28,4 +28,5 @@
   :pathname "./t/"
   :serial t
   :depends-on (#:rl #:fiveam #:alexandria)
-  :components ((:file "test-collisions")))
+  :components ((:file "test")
+               (:file "test-collisions")))

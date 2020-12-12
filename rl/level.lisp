@@ -88,6 +88,7 @@
   (unload-chunk chunk-pos))
 
 (defun save-chunk (chunk-pos)
+  "save chunk with chunk-pos being its top-left corner to disk"
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
     (with-standard-io-syntax
       (with-output-to-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y)
@@ -99,9 +100,11 @@
                s)))))
 
 (defun save-world ()
+  "save all chunks of world to disk"
   (loop for chunk in (all-chunks) do (save-chunk chunk)))
 
 (defun unload-world ()
+  "clear all game objects"
   (clear-objects))
 
 (defun unload-chunk (chunk-pos)
