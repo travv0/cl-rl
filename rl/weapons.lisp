@@ -19,12 +19,26 @@
     (setf (weapon-windup weapon) (floor (weapon-cooldown weapon) 2))))
 
 (defmethod apply-item ((weapon weapon) obj)
-  (setf (equip-right-arm obj) weapon))
+  (cond ((eq weapon (equip-right-arm obj))
+         (setf (equip-right-arm obj) nil))
+
+        ((eq weapon (equip-left-arm obj))
+         (setf (equip-left-arm obj) nil))
+
+        ((null (equip-left-arm obj))
+         (setf (equip-left-arm obj) weapon))
+
+        (t (setf (equip-right-arm obj) weapon))))
 
 (defmethod apply-item :after ((weapon weapon) obj)
-  (write-to-log "~a equipped ~a"
-                (display-name obj)
-                (display-name weapon)))
+  (if (or (eq weapon (equip-right-arm obj))
+          (eq weapon (equip-left-arm obj)))
+      (write-to-log "~a equipped ~a"
+                    (display-name obj)
+                    (display-name weapon))
+      (write-to-log "~a unequipped ~a"
+                    (display-name obj)
+                    (display-name weapon))))
 
 (define-class dagger (weapon)
   ((%damage :initform 15)
@@ -49,7 +63,9 @@
                :accessor stability)))
 
 (defmethod apply-item ((shield shield) obj)
-  (setf (equip-left-arm obj) shield))
+  (if (eq shield (equip-left-arm obj))
+      (setf (equip-left-arm obj) nil)
+      (setf (equip-left-arm obj) shield)))
 
 (define-class kite-shield (shield)
   ((%damage :initform 15)
