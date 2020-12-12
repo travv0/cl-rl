@@ -25,6 +25,9 @@
         ((eq weapon (equip-left-arm obj))
          (setf (equip-left-arm obj) nil))
 
+        ((null (equip-right-arm obj))
+         (setf (equip-right-arm obj) weapon))
+
         ((null (equip-left-arm obj))
          (setf (equip-left-arm obj) weapon))
 
@@ -61,11 +64,6 @@
    (%stability :initarg :stability
                :initform (error "stability must be initialized")
                :accessor stability)))
-
-(defmethod apply-item ((shield shield) obj)
-  (if (eq shield (equip-left-arm obj))
-      (setf (equip-left-arm obj) nil)
-      (setf (equip-left-arm obj) shield)))
 
 (define-class kite-shield (shield)
   ((%damage :initform 15)

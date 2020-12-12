@@ -10,9 +10,7 @@
    (%resistance :initform 5)
    (%intelligence :initform 5)
    (%faith :initform 5)
-   (%inventory :initform (make-inventory (make-instance 'health-potion :charges 5)
-                                         (make-instance 'sword)
-                                         (make-instance 'kite-shield)))
+   (%inventory :initform (make-inventory (make-instance 'health-potion :charges 5)))
    (%view-distance :initform 40 :accessor view-distance))
   (:documentation "the class of the player character"))
 
