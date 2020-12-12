@@ -6,4 +6,5 @@
                 #:desfun)
   (:import-from #:serapeum
                 #:@
-                #:ecase-of))
+                #:ecase-of)
+  (:export #:dev #:main))

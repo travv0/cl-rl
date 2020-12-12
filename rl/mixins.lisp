@@ -109,17 +109,28 @@
     (setf (previous-stamina obj) (stamina obj)))
   (setf (slot-value obj '%stamina) (min (max-stamina obj) new-value)))
 
-(define-class humanoid (inventory right-arm left-arm)
-  ())
+(define-class arm ()
+  ((%equipped-weapon :initarg :equipped-weapon :initform nil :accessor equipped-weapon)
+   (%arm-name :initarg :name :initform "" :accessor arm-name)))
+
+(defmethod print-object ((arm arm) stream)
+  (print-unreadable-object (arm stream :type t)
+    (format stream "~s ~s" (arm-name arm) (equipped-weapon arm))))
+
+(define-class arms ()
+  ((%arms :initarg :arms :initform '() :accessor arms)))
+
+(define-class humanoid (inventory arms)
+  ((%arms :initform (list (make-instance 'arm :name "right hand")
+                          (make-instance 'arm :name "left hand")))))
 
 (defmethod initialize-instance :after ((obj humanoid) &key)
-  (setf (equip-right-arm obj) (loop for (char . item) in (inventory obj)
-                                    when (and (typep item 'weapon)
-                                              (not (typep item 'shield)))
-                                      return item))
-  (setf (equip-left-arm obj) (loop for (char . item) in (inventory obj)
-                                   when (typep item 'shield)
-                                     return item)))
+  (loop with arm-num = 0
+        for (char . item) in (inventory obj)
+        while (< arm-num (length (arms obj)))
+        when (typep item 'weapon)
+          do (setf (equipped-weapon (nth arm-num (arms obj))) item)
+             (incf arm-num)))
 
 (defun make-resistance (type &optional amount)
   (let ((resistance (make-instance 'resistance :resistance-to type)))

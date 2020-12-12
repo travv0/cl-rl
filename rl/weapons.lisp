@@ -18,30 +18,28 @@
   (unless (slot-boundp weapon '%weapon-windup)
     (setf (weapon-windup weapon) (floor (weapon-cooldown weapon) 2))))
 
-(defmethod apply-item ((weapon weapon) obj)
-  (cond ((eq weapon (equip-right-arm obj))
-         (setf (equip-right-arm obj) nil))
-
-        ((eq weapon (equip-left-arm obj))
-         (setf (equip-left-arm obj) nil))
-
-        ((null (equip-right-arm obj))
-         (setf (equip-right-arm obj) weapon))
-
-        ((null (equip-left-arm obj))
-         (setf (equip-left-arm obj) weapon))
-
-        (t (setf (equip-right-arm obj) weapon))))
-
-(defmethod apply-item :after ((weapon weapon) obj)
-  (if (or (eq weapon (equip-right-arm obj))
-          (eq weapon (equip-left-arm obj)))
-      (write-to-log "~a equipped ~a"
-                    (display-name obj)
-                    (display-name weapon))
-      (write-to-log "~a unequipped ~a"
-                    (display-name obj)
-                    (display-name weapon))))
+(defmethod apply-item ((weapon weapon) (obj arms))
+  ;; first try to unequip weapon
+  (loop for arm in (arms obj)
+        when (eq (equipped-weapon arm) weapon)
+          do (setf (equipped-weapon arm) nil)
+             (write-to-log "~a unequipped ~a from ~a"
+                           (display-name obj)
+                           (display-name weapon)
+                           (arm-name arm))
+             (return-from apply-item))
+  ;; if weapon isn't equipped, equip it to first open arm
+  (loop for arm in (arms obj)
+        unless (equipped-weapon arm)
+          do (setf (equipped-weapon arm) weapon)
+             (write-to-log "~a equipped ~a to ~a"
+                           (display-name obj)
+                           (display-name weapon)
+                           (arm-name arm))
+             (return)
+        finally (write-to-log "~a has no open slots to equip ~a"
+                              (display-name obj)
+                              (display-name weapon))))
 
 (define-class dagger (weapon)
   ((%damage :initform 15)

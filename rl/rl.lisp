@@ -104,10 +104,12 @@
                                                       result)))))))
     (:inventory
      (list :inventory (loop for (char . item) in (inventory *player*)
-                            collect (cons char (dump-object item
-                                                            (list :equipped
-                                                                  (cond ((eq (equip-left-arm *player*) item) "left hand")
-                                                                        ((eq (equip-right-arm *player*) item) "right hand"))))))))))
+                            collect (cons char (dump-object
+                                                item
+                                                (list :equipped
+                                                      (when-let ((arm (find-if (op (eq (equipped-weapon _) item))
+                                                                               (arms *player*))))
+                                                        (arm-name arm))))))))))
 
 (defun spawn-pos ()
   (find-if (op (typep _ 'spawn)) *game-objects*))
