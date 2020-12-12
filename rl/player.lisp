@@ -25,8 +25,7 @@
                   (= y (1- end-y)))
           (setf (can-see *player*) t)
           (block pos-loop
-            (loop with hit-opaque = nil
-                  for distance from (view-distance *player*) downto 0
+            (loop for distance from (view-distance *player*) downto 0
                   for pos in (rest (get-line *player* (pos x y)))
                   do (when-let ((obj (get-object-at-pos pos)))
                        (unless (plusp distance)
@@ -34,9 +33,7 @@
                        (unless (can-see obj)
                          (setf (can-see obj) t))
                        (when (typep obj 'opaque)
-                         (setf hit-opaque t)))
-                     (when hit-opaque
-                       (return-from pos-loop))))))))
+                         (return-from pos-loop)))))))))
   ;; if an object is opaque but not can-see, set can-see to t if it
   ;; has a visible object next to it so that there aren't random
   ;; invisible positions in walls
