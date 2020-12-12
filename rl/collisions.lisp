@@ -33,11 +33,14 @@
       (stamina-use (equipped-weapon arm))
       *unarmed-stamina*))
 
-(defmethod stamina-use (item)
-  0)
-
 (defmethod attack-stamina-use ((obj arms))
-  (reduce (op (+ _1 (stamina-use (equipped-weapon _2)))) (arms obj) :initial-value 0))
+  (reduce (lambda (acc arm)
+            (+ acc
+               (if (equipped-weapon arm)
+                   (stamina-use arm)
+                   *unarmed-stamina*)))
+          (arms obj)
+          :initial-value 0))
 
 (defmethod weapon-windup ((arm arm))
   (if (equipped-weapon arm)
@@ -61,7 +64,7 @@
 
 (defmethod attack :after (obj (attacker arms))
   (dolist (arm (arms attacker))
-    (let ((stamina-use (stamina-use (equipped-weapon arm))))
+    (let ((stamina-use (stamina-use arm)))
       (when (typep arm 'cooldown)
         (let ((cooldown (weapon-cooldown arm)))
           (incf (cooldown attacker) cooldown)))
@@ -99,15 +102,15 @@
               (damage-mod *unarmed-damage*)))
       0))
 
-  (defmethod check-collisions ((obj moveable))
-    (declare (optimize speed))
-    (loop with collisions = '()
-          with previous-step = obj
-          for step in (rest (get-line obj (pos (+ (x obj) (dx obj))
-                                               (+ (y obj) (dy obj)))))
-          for objs = (get-objects-at-pos step) do
-            (loop for other-obj in objs
-                  when (same step other-obj)
-                    do (push (cons other-obj previous-step) collisions)
-                  do (setf previous-step step))
-          finally (return collisions)))
+(defmethod check-collisions ((obj moveable))
+  (declare (optimize speed))
+  (loop with collisions = '()
+        with previous-step = obj
+        for step in (rest (get-line obj (pos (+ (x obj) (dx obj))
+                                             (+ (y obj) (dy obj)))))
+        for objs = (get-objects-at-pos step) do
+          (loop for other-obj in objs
+                when (same step other-obj)
+                  do (push (cons other-obj previous-step) collisions)
+                do (setf previous-step step))
+        finally (return collisions)))

@@ -23,3 +23,9 @@
                (:file "weapons")
                (:file "collisions")
                (:file "rl")))
+
+(asdf:defsystem #:rl/tests
+  :pathname "./t/"
+  :serial t
+  :depends-on (#:rl #:fiveam #:alexandria)
+  :components ((:file "test-collisions")))

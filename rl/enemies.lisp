@@ -52,7 +52,7 @@
     (:chasing (cond ((and (zerop (random 50))
                           (not (can-see-p enemy *player*)))
                      (setf (enemy-state enemy) :wandering))
-                    ((< (stamina enemy) (stamina-use enemy))
+                    ((< (stamina enemy) (attack-stamina-use enemy))
                      (setf (enemy-state enemy) :fleeing))
                     (t (move-toward-goal enemy *player*))))
     (:wandering
@@ -72,6 +72,6 @@
            for i from 1
            do (setf (wandering-to enemy) (random-pos))
            until (or moved (> i 5)))
-     (when (and (>= (stamina enemy) (* 1.5 (stamina-use enemy)))
+     (when (and (>= (stamina enemy) (* 1.5 (attack-stamina-use enemy)))
                 (zerop (random 20)))
        (setf (enemy-state enemy) :chasing)))))
