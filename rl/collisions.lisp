@@ -55,8 +55,7 @@
 (defmethod collide :before ((obj alive) (attacker arms))
   (let ((stamina-use (attack-stamina-use attacker)))
     (when (or (typep attacker 'player)
-              (and (plusp (- (stamina attacker) stamina-use))
-                   (zerop (random (* 2 (floor (max-stamina attacker) (- (stamina attacker) stamina-use)))))))
+              (plusp (- (stamina attacker) stamina-use)))
       (if (>= (stamina attacker) stamina-use)
           (attack obj attacker)
           (write-to-log "~a could not attack - insufficient stamina"
