@@ -1,8 +1,0 @@
-* grass area ideas
-** TODO hidden staircase in forest.  maybe something like below or even completely surrounded with trees you can walk through
-   - probably lead to a small cave area with some treasure
-   - ###
-     #>#
-     ##
-** TODO hole in water, drop down to water area
-** TODO some kind of ruins with some tougher monsters and treasure scattered around
