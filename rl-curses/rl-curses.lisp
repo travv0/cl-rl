@@ -11,6 +11,8 @@
         (error "start-color error ~s." ret-code))))
 
 (defun color-from-keyword (color)
+  "Converts the keyword `color' to the integer representation for the
+terminal."
   (ecase color
     (:black   charms/ll:COLOR_BLACK)
     (:red     charms/ll:COLOR_RED)
@@ -22,7 +24,9 @@
     (:white   charms/ll:COLOR_WHITE)))
 
 (defun define-color-pair (pair foreground background)
-  (progn (charms/ll:init-pair pair (color-from-keyword foreground) (color-from-keyword background))
+  (progn (charms/ll:init-pair pair
+                              (color-from-keyword foreground)
+                              (color-from-keyword background))
          (charms/ll:color-pair pair)))
 
 (defparameter *color-pairs* (serapeum:dict))
@@ -230,7 +234,7 @@
                                 &key
                                   ((:attributes (&key charges max-charges equipped)))
                                   ((:display-name name))
-                                  &allow-other-keys)
+                                &allow-other-keys)
                item
              (charms:write-string-at-point charms:*standard-window*
                                            (format nil "~c. ~a ~@[~a~]~@[/~a~]~@[(equipped: ~a)~]"

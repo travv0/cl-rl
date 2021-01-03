@@ -85,7 +85,9 @@
    (%health :reader health)
    (%max-health :reader max-health)
    (%previous-health :accessor previous-health :initform 0)
-   (%resistances :initform '() :initarg :resistances :accessor resistances)))
+   (%resistances :initform '() :initarg :resistances :accessor resistances)
+
+   (%view-distance :initform (error "view-distance is requred") :initarg :view-distance :accessor view-distance)))
 
 (defmethod calculate-max-health ((obj alive))
   (round (+ 90 (* 100 (/ (vitality obj) 20)))))

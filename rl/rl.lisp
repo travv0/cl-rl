@@ -150,7 +150,7 @@
   (ensure-chunks-loaded (chunks-to-show))
 
   (update *player*)
-  (update-can-see))
+  (update-can-see *player*))
 
 (defun tick (action)
   (delete-from-mix *player* 'running)
@@ -231,7 +231,7 @@
                          else collect obj))
 
              (when (zerop (cooldown *player*))
-               (update-can-see)
+               (update-can-see *player*)
                (update-chunks))
 
              (incf *turn*)
