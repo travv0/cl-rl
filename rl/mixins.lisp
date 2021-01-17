@@ -38,12 +38,6 @@
                        :initform 1.2
                        :accessor resistance-amount)))
 
-(define-class right-arm ()
-  ((%equip-right-arm :initarg :equip-right-arm :initform nil :accessor equip-right-arm)))
-
-(define-class left-arm ()
-  ((%equip-left-arm :initarg :equip-left-arm :initform nil :accessor equip-left-arm)))
-
 (define-class damage ()
   ((%damage :initarg :damage :initform (error "damage must be set") :accessor damage)))
 
