@@ -219,9 +219,9 @@
 
                (dolist (obj *game-objects*)
                  (unless (typep obj 'deleted)
-                   (if (cooling-down-p obj)
-                       (cool-down obj)
-                       (update obj)))))
+                   (cool-down obj)
+                   (unless (cooling-down-p obj)
+                     (update obj)))))
 
              (setf *game-objects*
                    (loop for obj in *game-objects*

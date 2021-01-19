@@ -190,13 +190,15 @@
   (let ((start-stamina (stamina obj)))
     (call-next-method)
     (unless (< (stamina obj) start-stamina)
-      (let ((increase (if (and (typep obj 'cooldown) (not (zerop (cooldown obj))))
-                          (cooldown obj)
-                          1)))
-        (setf (stamina obj) (min (+ (stamina obj) increase) (max-stamina obj)))))))
+      (setf (stamina obj) (min (+ (stamina obj) 1) (max-stamina obj))))))
+
+(defmethod cool-down (obj))
 
 (defmethod cool-down ((obj cooldown))
   (when (plusp (cooldown obj))
+    (let ((start-stamina (stamina obj)))
+      (unless (< (stamina obj) start-stamina)
+        (setf (stamina obj) (min (+ (stamina obj) 1) (max-stamina obj)))))
     (decf (cooldown obj))))
 
 (defun cooling-down-p (obj)
