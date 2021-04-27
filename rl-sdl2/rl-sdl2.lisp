@@ -42,7 +42,9 @@
     ((:item :weapon :shield :enemy)
      (error "~a should be inherited from and cannot be drawn" name))))
 
-(desfun display ((&key name x y attributes))
+(desfun display ((&key name x y attributes actions))
+  (when actions
+    (format t "~a~%" actions))
   (when-let ((image (get-image name attributes)))
     (draw x y image)))
 

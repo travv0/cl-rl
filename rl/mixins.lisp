@@ -10,7 +10,8 @@
    (%move-cooldown :initarg :move-cooldown :initform 5 :accessor move-cooldown)))
 
 (define-class visible (pos)
-  ((%can-see :initform nil :accessor can-see)))
+  ((%can-see :initform nil :accessor can-see)
+   (%actions :initform '() :initarg :actions :accessor actions)))
 
 (defgeneric can-see (obj)
   (:documentation "return non-nil if object can be seen from player's
@@ -136,6 +137,13 @@
 
 (defparameter *running-stamina* 3)
 
+(defmethod add-action (obj action))
+
+(defmethod add-action ((obj visible) action)
+  "add `action' to `obj''s action list. `action' should be a list
+starting with a keyword and containing relevant info"
+  (appendf (actions obj) (list action)))
+
 (defmethod update :after ((obj moveable))
   (with-accessors ((x x) (y y)
                    (dx dx) (dy dy)
@@ -170,9 +178,10 @@
           (let ((move-cooldown (~> move-cooldown
                                    modify-for-running
                                    (modify-for-terrain x y))))
-            (incf cooldown move-cooldown)))))
+            (incf cooldown move-cooldown))))
 
-    (update-pos obj (+ x (round dx)) (+ y (round dy)))
+      (update-pos obj (+ x (round dx)) (+ y (round dy)))
+      (add-action obj (list :move-to (x obj) (y obj))))
 
     (when (and (typep obj 'alive) (typep obj 'running))
       (cond ((< (stamina obj) *running-stamina*)

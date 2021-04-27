@@ -57,7 +57,8 @@
         :display-name (display-name obj)
         :x (x obj)
         :y (y obj)
-        :attributes attributes))
+        :attributes attributes
+        :actions (actions obj)))
 
 (defmethod dump-object ((door door) &optional attributes)
   (call-next-method door (concatenate 'list
@@ -154,6 +155,11 @@
 
 (defun tick (action)
   (delete-from-mix *player* 'running)
+
+  (dolist (obj (cons *player* *game-objects*))
+    (when (typep obj 'visible)
+      (setf (actions obj) '())))
+
   (when (ecase *state*
           (:play
            (ecase action
@@ -215,7 +221,8 @@
                (initialize))
 
              (let ((*game-objects* (cons *player* *game-objects*)))
-               (mapc (lambda (obj) (setf (can-see obj) nil)) *game-objects*)
+               (dolist (obj *game-objects*)
+                 (setf (can-see obj) nil))
 
                (dolist (obj *game-objects*)
                  (unless (typep obj 'deleted)
