@@ -23,9 +23,15 @@
                              ".png"))))
     `(progn ,@result)))
 
-(defun display-each (objects)
-  (dolist (obj objects)
-    (display obj)))
+(defun display-each (objects time)
+  (let ((actions-left nil))
+    (dolist (obj objects)
+      (if (getf obj :actions)
+          (progn (animate-action obj time)
+                 (setf actions-left t))
+          (display obj)))
+    (unless actions-left
+      (setf *animating* nil))))
 
 (defun get-image (name attributes)
   (ecase-of rl:visible-keyword name
@@ -42,11 +48,27 @@
     ((:item :weapon :shield :enemy)
      (error "~a should be inherited from and cannot be drawn" name))))
 
-(desfun display ((&key name x y attributes actions))
-  (when actions
-    (format t "~a~%" actions))
+(desfun display ((&key name x y attributes))
   (when-let ((image (get-image name attributes)))
     (draw x y image)))
+
+(defparameter *action-time* 1)
+
+(desfun animate-action ((&whole obj &key name actions attributes) time)
+  (let ((image (get-image name attributes))
+        (action (first actions)))
+    (destructuring-ecase action
+      ((:move &key from to)
+       (destructuring-bind ((from-x from-y) (to-x to-y)) (list from to)
+         (let ((curr-x (+ (* (- to-x from-x)
+                             (/ time *action-time*))
+                          from-x))
+               (curr-y (+ (* (- to-y from-y)
+                             (/ time *action-time*))
+                          from-y)))
+           (draw curr-x curr-y image)))))
+    (when (>= time *action-time*)
+      (setf (getf obj :actions) (cdr actions)))))
 
 (defmacro with-text-blended ((texture text &key font (r 255) (g 255) (b 255) (a 255)) &body body)
   (with-gensyms (surface)
@@ -70,8 +92,9 @@
           (y (+ (- (* y *tile-size*) (* *player-y* *tile-size*))
                 (floor height 2))))
       (when (and (<= (- *tile-size*) x (1- width)) (<= (- *tile-size*) y (1- height)))
+        (format t "~d ~d~%" x y)
         (sdl2:render-copy *renderer* image
-                          :dest-rect (sdl2:make-rect x y *tile-size* *tile-size*))))))
+                          :dest-rect (sdl2:make-rect (round x) (round y) *tile-size* *tile-size*))))))
 
 (defvar *key-action-map* (make-hash-table))
 
@@ -192,16 +215,16 @@
                                                           (sdl2:texture-width texture)
                                                           (sdl2:texture-height texture))))))
 
-(defun draw-play (data width height)
+(defun draw-play (data width height time)
   (declare (ignorable width height))
   (destructuring-bind (&key ((:player (&whole player
-                                              &key ((:attributes player-attributes))
-                                              &allow-other-keys)))
+                                       &key ((:attributes player-attributes))
+                                       &allow-other-keys)))
                          objects log turn seed)
       data
     (let ((*player-x* (getf player :x))
           (*player-y* (getf player :y)))
-      (display-each objects)
+      (display-each objects time)
       (display-health (getf player-attributes :health)
                       (getf player-attributes :max-health)
                       (getf player-attributes :previous-health))
@@ -219,7 +242,7 @@
                                 &key
                                   ((:attributes (&key charges max-charges equipped)))
                                   ((:display-name name))
-                                  &allow-other-keys)
+                                &allow-other-keys)
                item
              (let* ((surface (sdl2-ttf:render-text-blended *font* (format nil "~c. ~a ~@[~a~]~@[/~a~]~@[(equipped: ~a)~]"
                                                                           char
@@ -235,16 +258,22 @@
                                                             (sdl2:texture-width texture)
                                                             (sdl2:texture-height texture)))))))
 
+(defvar *animating*)
+
 (defun update-and-display (scancode)
   (multiple-value-bind (width height)
       (sdl2:get-window-size *window*)
     (destructuring-bind (state data) (rl:tick (scancode-to-action scancode))
       (setf *state* state)
-      (sdl2:render-clear *renderer*)
-      (ecase-of rl:states state
-        (:play (draw-play data width height))
-        (:inventory (draw-inventory data width height)))
-      (sdl2:render-present *renderer*))))
+      (let ((*animating* t))
+        (loop
+          for time = 0 then (+ time 0.1)
+          while *animating* do
+            (sdl2:render-clear *renderer*)
+            (ecase-of rl:states state
+              (:play (draw-play data width height time))
+              (:inventory (draw-inventory data width height)))
+            (sdl2:render-present *renderer*))))))
 
 (defun dev ()
   (bt:make-thread (lambda () (main))

@@ -180,8 +180,11 @@ starting with a keyword and containing relevant info"
                                    (modify-for-terrain x y))))
             (incf cooldown move-cooldown))))
 
-      (update-pos obj (+ x (round dx)) (+ y (round dy)))
-      (add-action obj (list :move-to (x obj) (y obj))))
+      (let ((new-x (+ x (round dx)))
+            (new-y (+ y (round dy))))
+        (add-action obj (list :move :from (list (x obj) (y obj))
+                                    :to (list new-x new-y)))
+        (update-pos obj new-x new-y)))
 
     (when (and (typep obj 'alive) (typep obj 'running))
       (cond ((< (stamina obj) *running-stamina*)
