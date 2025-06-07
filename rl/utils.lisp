@@ -46,16 +46,16 @@ serialized for writing to disk should use this instead"
 
 (defmethod ms::unmarshal-fn ((version (eql (ms::coding-idiom :coding-release-no)))
                              (type (eql (ms::coding-idiom :object))) token &optional (circle-hash nil))
-  (let* ((package    (find-package (fmt:object-package-name token)))
-         (values     (fmt:class-slots-values  token))
-         (class      (fmt:object-class-name token))
+  (let* ((package    (find-package (ms::object-package-name token)))
+         (values     (ms::class-slots-values  token))
+         (class      (ms::object-class-name token))
 	 (out        (etypecase class
-                       (cons (make-instance (apply #'dynamic-mixins:mix (fmt:object-class-name token))))
+                       (cons (make-instance (apply #'dynamic-mixins:mix (ms::object-class-name token))))
                        (t (allocate-instance (find-class (intern (symbol-name class)
                                                                  package))))))
 	 (slots      (ms:class-persistent-slots  out)))
 
-    (setf (gethash (fmt:id token) circle-hash) out)
+    (setf (gethash (ms::id token) circle-hash) out)
 
     (loop
       for slot in slots
@@ -63,7 +63,7 @@ serialized for writing to disk should use this instead"
       do (if (listp value)
              (setf (slot-value out slot)
                    (ms::unmarshal-fn version
-                                     (fmt:data-type value)
+                                     (ms::data-type value)
                                      value
                                      circle-hash))
              (setf (slot-value out slot) (ms::unmarshal-fn version t value circle-hash))))

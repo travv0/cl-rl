@@ -14,7 +14,8 @@
          rl::*seed*
          rl::*log*
          rl::*game-objects*
-         rl::*pos-cache*)
+         rl::*pos-cache*
+         rl::*player*)
      (initialize 12345)
      ,@body))
 
@@ -25,5 +26,6 @@
          (rl::*game-objects* '())
          (rl::*pos-cache* (make-array (list rl::*stage-width* rl::*stage-height*)
                                       :element-type 'list
-                                      :initial-element '())))
+                                      :initial-element '()))
+         (rl::*player* nil))
      ,@body))
