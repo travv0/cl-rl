@@ -61,7 +61,7 @@
       (setf (rl::can-see player) '())
       (is (null (rl::can-see player)))
       ;; Has view-distance
-      (is (= (slot-value player 'rl::view-distance) 40)))))
+      (is (= (rl::view-distance player) 40)))))
 
 (test player-solidity
   (with-empty-state

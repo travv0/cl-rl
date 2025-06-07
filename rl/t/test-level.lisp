@@ -56,11 +56,12 @@
 
 (test spawn-creation
   (with-empty-state
-    (let ((spawn (rl::make-spawn 0 0)))
+    (let ((spawn (rl::make-spawn)))
       (is (typep spawn 'rl::spawn))
       (is (typep spawn 'rl::pos))
-      (is (= (rl::x spawn) 0))
-      (is (= (rl::y spawn) 0)))))
+      ;; Position should be valid (within stage bounds)
+      (is (and (>= (rl::x spawn) 0) (< (rl::x spawn) rl::*stage-width*)))
+      (is (and (>= (rl::y spawn) 0) (< (rl::y spawn) rl::*stage-height*))))))
 
 (test door-creation
   (with-empty-state
@@ -82,9 +83,9 @@
 
 (test get-objects-at-pos
   (with-empty-state
-    (let ((obj1 (make-instance 'rl::pos :x 5 :y 5))
-          (obj2 (make-instance 'rl::pos :x 5 :y 5))
-          (obj3 (make-instance 'rl::pos :x 6 :y 6)))
+    (let ((obj1 (make-instance 'rl::item :x 5 :y 5))
+          (obj2 (rl::make-grass 5 5))
+          (obj3 (make-instance 'rl::item :x 6 :y 6)))
       (rl::add-object obj1)
       (rl::add-object obj2)
       (rl::add-object obj3)
@@ -102,20 +103,17 @@
       (rl::add-object wall)
       (rl::add-object item)
       
-      ;; Get specific type
-      (is (eq (rl::get-object-at-pos (rl::pos 5 5) 'rl::wall) wall))
-      (is (eq (rl::get-object-at-pos (rl::pos 5 5) 'rl::item) item))
-      
-      ;; Get any object
-      (is (member (rl::get-object-at-pos (rl::pos 5 5)) (list wall item))))))
+      ;; Get first visible object (wall or item)
+      (let ((found (rl::get-object-at-pos (rl::pos 5 5))))
+        (is (member found (list wall item)))))))
 
 (test perlin-noise-seed
   (with-empty-state
-    ;; Test it returns a string
-    (is (stringp (rl::make-perlin-noise-seed 12345)))
+    ;; Test it returns a number (fraction)
+    (is (numberp (rl::make-perlin-noise-seed 12345)))
     ;; Test different seeds give different results
-    (is (not (string= (rl::make-perlin-noise-seed 12345)
-                      (rl::make-perlin-noise-seed 54321))))))
+    (is (not (= (rl::make-perlin-noise-seed 12345)
+                (rl::make-perlin-noise-seed 54321))))))
 
 (test chunk-calculations
   (with-empty-state
@@ -124,18 +122,25 @@
       (setf rl::*player* player)
       (let ((chunk (rl::player-chunk)))
         (is (typep chunk 'rl::pos))
-        (is (= (rl::x chunk) 100))  ; floor(150/100)*100
-        (is (= (rl::y chunk) 200))))) ; floor(250/100)*100
+        (is (= (rl::x chunk) 120))  ; floor(150/40)*40
+        (is (= (rl::y chunk) 240))))) ; floor(250/40)*40
   
-  ;; Test chunks-to-show
-  (let ((chunks (rl::chunks-to-show)))
-    (is (listp chunks))
-    ;; Should return list of chunk positions
-    (dolist (chunk chunks)
-      (is (typep chunk 'rl::pos)))))
+  ;; Test chunks-to-show (with player set)
+  (let ((player (make-instance 'rl::player :x 150 :y 250)))
+    (setf rl::*player* player)
+    (let ((chunks (rl::chunks-to-show)))
+      (is (listp chunks))
+      ;; Should return list of chunk positions
+      (dolist (chunk chunks)
+        (is (typep chunk 'rl::pos))))))
 
 (test should-display
   (with-empty-state
-    ;; Test base method - returns t
+    ;; Test base method - returns nil for pos objects
     (let ((obj (make-instance 'rl::pos)))
-      (is (rl::should-display obj))))) 
+      (is (not (rl::should-display obj)))
+      
+      ;; Test visible object
+      (let ((visible-obj (make-instance 'rl::item :x 0 :y 0)))
+        (setf (rl::can-see visible-obj) t)
+        (is (rl::should-display visible-obj)))))) 

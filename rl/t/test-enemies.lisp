@@ -58,13 +58,16 @@
 
 (test rat-creation
   (with-empty-state
-    (let ((rat (make-instance 'rl::rat)))
+    (let ((rat (make-instance 'rl::rat 
+                              :resistance 1
+                              :intelligence 1
+                              :faith 1)))
       ;; Rat is just an enemy, not humanoid
       (is (typep rat 'rl::enemy))
       (is (not (typep rat 'rl::humanoid)))
       ;; Has low stats (all 2)
-      (is (= (slot-value rat 'rl::strength) 2))
-      (is (= (slot-value rat 'rl::vitality) 2)))))
+      (is (= (rl::strength rat) 2))
+      (is (= (rl::vitality rat) 2)))))
 
 (test enemy-print-object
   (with-empty-state
