@@ -113,7 +113,16 @@
     (is (numberp (rl::make-perlin-noise-seed 12345)))
     ;; Test different seeds give different results
     (is (not (= (rl::make-perlin-noise-seed 12345)
-                (rl::make-perlin-noise-seed 54321))))))
+                (rl::make-perlin-noise-seed 54321))))
+    ;; Test edge cases that could cause division by zero
+    (is (numberp (rl::make-perlin-noise-seed 1000))) ; denominator would be "000"
+    (is (numberp (rl::make-perlin-noise-seed 2000))) ; denominator would be "000"
+    (is (numberp (rl::make-perlin-noise-seed 100)))  ; short seed
+    (is (numberp (rl::make-perlin-noise-seed 10)))   ; very short seed
+    (is (numberp (rl::make-perlin-noise-seed 0)))    ; zero seed
+    ;; Ensure no errors are thrown
+    (finishes (rl::make-perlin-noise-seed 3000))
+    (finishes (rl::make-perlin-noise-seed 999))))
 
 (test chunk-calculations
   (with-empty-state

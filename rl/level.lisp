@@ -156,10 +156,22 @@
 
 (defun make-perlin-noise-seed (seed)
   (let* ((string-seed (write-to-string seed))
-         (numerator (subseq string-seed 0 (- (length string-seed) 3)))
-         (denominator (subseq string-seed (- (length string-seed) 3))))
-    (handler-case (/ (parse-integer numerator) (parse-integer denominator))
-      (arithmetic-error () (make-perlin-noise-seed (+ seed 9))))))
+         (len (length string-seed)))
+    (if (< len 4)
+        ;; If seed is too short, just use it directly
+        (/ seed 1000.0)
+        (let* ((numerator (subseq string-seed 0 (- len 3)))
+               (denominator (subseq string-seed (- len 3))))
+          (handler-case 
+              (let ((num (parse-integer numerator))
+                    (denom (parse-integer denominator)))
+                ;; Ensure denominator is never zero
+                (if (zerop denom)
+                    (/ num 1000.0)
+                    (/ num denom)))
+            (error () 
+              ;; If parsing fails, fall back to simple conversion
+              (/ seed 1000.0)))))))
 
 (defun make-secret-entrance ()
   (let ((tree (random-elt (remove-if-not (lambda (obj) (and (typep obj 'tree)
