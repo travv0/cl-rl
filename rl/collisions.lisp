@@ -23,34 +23,38 @@
                     (display-name moving-obj)
                     (display-name obj))))
 
-(defparameter *unarmed-damage* 5)
-(defparameter *unarmed-stamina* 10)
-(defparameter *unarmed-cooldown* 2)
-(defparameter *unarmed-windup* 1)
+(defconstant +unarmed-damage+ 5
+  "Base damage for unarmed attacks")
+(defconstant +unarmed-stamina+ 10
+  "Stamina cost for unarmed attacks")
+(defconstant +unarmed-cooldown+ 2
+  "Cooldown time for unarmed attacks")
+(defconstant +unarmed-windup+ 1
+  "Windup time for unarmed attacks")
 
 (defmethod stamina-use ((arm arm))
   (if (equipped-weapon arm)
       (stamina-use (equipped-weapon arm))
-      *unarmed-stamina*))
+      +unarmed-stamina+))
 
 (defmethod attack-stamina-use ((obj arms))
   (reduce (lambda (acc arm)
             (+ acc
                (if (equipped-weapon arm)
                    (stamina-use arm)
-                   *unarmed-stamina*)))
+                   +unarmed-stamina+)))
           (arms obj)
           :initial-value 0))
 
 (defmethod weapon-windup ((arm arm))
   (if (equipped-weapon arm)
       (weapon-windup (equipped-weapon arm))
-      *unarmed-windup*))
+      +unarmed-windup+))
 
 (defmethod weapon-cooldown ((arm arm))
   (if (equipped-weapon arm)
       (weapon-cooldown (equipped-weapon arm))
-      *unarmed-cooldown*))
+      +unarmed-cooldown+))
 
 (defmethod collide :before ((obj alive) (attacker arms))
   (let ((stamina-use (attack-stamina-use attacker)))
@@ -100,7 +104,7 @@
                                                (* (resistance-amount resistance) modifier-damage))))
                     (setf damage (* damage 0.95 modifier-damage))))
                 (damage-mod damage))
-              (damage-mod *unarmed-damage*)))
+              (damage-mod +unarmed-damage+)))
       0))
 
 (defmethod check-collisions ((obj moveable))

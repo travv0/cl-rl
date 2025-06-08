@@ -135,7 +135,8 @@
       (setf (resistance-amount resistance) amount))
     resistance))
 
-(defparameter *running-stamina* 3)
+(defconstant +running-stamina+ 3
+  "Stamina cost per turn when running")
 
 (defmethod add-action (obj action))
 
