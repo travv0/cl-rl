@@ -81,11 +81,11 @@
 
 (defun chunk-range-to-show ()
   (let ((positions (chunks-to-show)))
-    (loop for pos in positions
-          minimizing (x pos) into min-x
-          minimizing (y pos) into min-y
-          maximizing (+ (x pos) *chunk-width*) into max-x
-          maximizing (+ (y pos) *chunk-width*) into max-y
+    (loop for p in positions
+          minimizing (x p) into min-x
+          minimizing (y p) into min-y
+          maximizing (+ (x p) *chunk-width*) into max-x
+          maximizing (+ (y p) *chunk-width*) into max-y
           finally (return (values min-x min-y max-x max-y)))))
 
 (defun chunks-to-unload ()
@@ -167,15 +167,15 @@
 
 (defun ensure-chunks-loaded (chunk-positions)
   "Load chunks that aren't already loaded. Must be called with lock held."
-  (loop for pos in chunk-positions
-        unless (aref *pos-cache* (x pos) (y pos))
-          do (load-chunk pos)))
+  (loop for p in chunk-positions
+        unless (aref *pos-cache* (x p) (y p))
+          do (load-chunk p)))
 
 (defun ensure-chunks-unloaded (chunk-positions)
   "Save and unload chunks that are loaded. Must be called with lock held."
-  (loop for pos in chunk-positions
-        when (aref *pos-cache* (x pos) (y pos))
-          do (save-and-unload-chunk pos)))
+  (loop for p in chunk-positions
+        when (aref *pos-cache* (x p) (y p))
+          do (save-and-unload-chunk p)))
 
 (defvar *chunk-loader-thread* nil
   "Thread for loading/unloading chunks in the background")

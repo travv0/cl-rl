@@ -111,7 +111,8 @@
                                              (+ (y obj) (dy obj)))))
         for objs = (get-objects-at-pos step) do
           (loop for other-obj in objs
-                when (same step other-obj)
+                when (and (typep other-obj 'pos)
+                          (pos-equal step other-obj))
                   do (push (cons other-obj previous-step) collisions))
           (setf previous-step step)
         finally (return collisions)))

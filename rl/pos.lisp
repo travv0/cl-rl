@@ -46,8 +46,8 @@
 
 (defmethod can-see-p ((origin pos) (target pos))
   "returns non-nil if `target' pos can be seen from `origin' pos"
-  (loop for pos in (rest (get-line origin target))
-        do (loop for obj in (get-objects-at-pos pos)
+  (loop for p in (rest (get-line origin target))
+        do (loop for obj in (get-objects-at-pos p)
                  when (typep obj 'opaque)
                    do (return-from can-see-p))
         finally (return t)))

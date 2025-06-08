@@ -20,9 +20,6 @@
 
 ;; Run the game with error handling
 (format t "Starting game...~%")
-(format t "Make sure your terminal window is at least 80x24 characters!~%")
-(format t "Press any key to continue...~%")
-(read-char)
 
 (handler-case
     (rl-curses:main)
