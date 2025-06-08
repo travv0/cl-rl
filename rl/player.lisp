@@ -22,8 +22,8 @@
       (loop for x from start-x below end-x do
         (block pos-loop
             (loop for distance from (view-distance from) downto 0
-                  for pos in (rest (get-line from (pos x y)))
-                  do (when-let ((obj (get-object-at-pos pos)))
+                  for p in (rest (get-line from (pos x y)))
+                  do (when-let ((obj (get-object-at-pos p)))
                        (unless (plusp distance)
                          (return-from pos-loop))
                        (unless (can-see obj)
