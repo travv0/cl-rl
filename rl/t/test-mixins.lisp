@@ -111,9 +111,12 @@
     ;; cool-down method needs an object with stamina - use player
     (let ((obj (make-instance 'rl::player)))
       (setf (rl::cooldown obj) 5)
-      ;; cool-down should decrement cooldown
-      (rl::cool-down obj)
-      (is (= (rl::cooldown obj) 4)))))
+      (let ((start-stamina (rl::stamina obj)))
+        ;; cool-down should decrement cooldown
+        (rl::cool-down obj)
+        (is (= (rl::cooldown obj) 4))
+        ;; cool-down should NOT regenerate stamina
+        (is (= (rl::stamina obj) start-stamina))))))
 
 (test calculate-max-health
   (with-empty-state
@@ -155,3 +158,21 @@
     (let ((obj (make-instance 'rl::dagger)))
       (is (typep obj 'rl::stamina-use))
       (is (numberp (rl::stamina-use obj))))))
+
+(test stamina-regeneration
+  (with-empty-state
+    ;; Test that stamina regenerates in update but not in cool-down
+    (let ((player (make-instance 'rl::player)))
+      ;; Reduce stamina
+      (setf (rl::stamina player) (- (rl::stamina player) 10))
+      (let ((reduced-stamina (rl::stamina player)))
+        ;; Update should regenerate stamina
+        (rl::update player)
+        (is (= (rl::stamina player) (+ reduced-stamina 1)))
+        
+        ;; Reset and test cool-down doesn't regenerate
+        (setf (rl::stamina player) reduced-stamina)
+        (setf (rl::cooldown player) 5)
+        (rl::cool-down player)
+        (is (= (rl::stamina player) reduced-stamina))
+        (is (= (rl::cooldown player) 4))))))

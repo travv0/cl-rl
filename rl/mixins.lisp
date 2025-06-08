@@ -208,9 +208,6 @@ starting with a keyword and containing relevant info"
 
 (defmethod cool-down ((obj cooldown))
   (when (plusp (cooldown obj))
-    (let ((start-stamina (stamina obj)))
-      (unless (< (stamina obj) start-stamina)
-        (setf (stamina obj) (min (+ (stamina obj) 1) (max-stamina obj)))))
     (decf (cooldown obj))))
 
 (defun cooling-down-p (obj)
