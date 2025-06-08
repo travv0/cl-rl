@@ -79,3 +79,23 @@
         ;; First item should be health potion
         (let ((first-item (cdr (first inventory))))
           (is (typep first-item 'rl::health-potion)))))))
+
+(test update-can-see-variable-shadowing
+  (with-empty-state
+    ;; This test ensures the 'pos' loop variable doesn't shadow the pos function
+    ;; The bug was: for pos in (rest (get-line from (pos x y)))
+    (let ((player (make-instance 'rl::player :x 50 :y 50)))
+      (rl::add-object player)
+      (setf rl::*player* player)
+      
+      ;; Add some visible objects
+      (rl::add-object (rl::make-grass 52 50))
+      (rl::add-object (rl::make-wall 55 50))
+      
+      ;; This should not error with "Invalid function name: #<RL::POS ...>"
+      (finishes (rl::update-can-see player))
+      
+      ;; Verify visibility was calculated
+      (is (rl::can-see player))
+      ;; Grass should be visible
+      (is (rl::can-see (first (rl::get-objects-at-pos (rl::pos 52 50))))))))
