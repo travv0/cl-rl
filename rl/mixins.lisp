@@ -171,8 +171,8 @@ starting with a keyword and containing relevant info"
                                  2/3)))
                    cooldown))
              (modify-for-terrain (cooldown x y)
-               (if-let ((pos (get-terrain-at-pos (pos x y))))
-                 (round (* cooldown (cooldown-modifier pos)))
+               (if-let ((terrain (get-terrain-at-pos (pos x y))))
+                 (round (* cooldown (cooldown-modifier terrain)))
                  cooldown)))
         (unless (and (zerop dx) (zerop dy))
           (let ((move-cooldown (~> move-cooldown
