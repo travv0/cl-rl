@@ -101,7 +101,7 @@
                    finally (return result)
                    do (loop for x from start-x below end-x
                             for objs = (get-objects-at-pos (pos x y))
-                            when (can-see (first objs))
+                            when (some #'can-see objs)
                               do (setf result (append (reverse (mapcar #'dump-object objs))
                                                       result)))))))
     (:inventory
