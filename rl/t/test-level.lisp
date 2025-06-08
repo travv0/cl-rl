@@ -152,4 +152,29 @@
       ;; Test visible object
       (let ((visible-obj (make-instance 'rl::item :x 0 :y 0)))
         (setf (rl::can-see visible-obj) t)
-        (is (rl::should-display visible-obj)))))) 
+        (is (rl::should-display visible-obj))))))
+
+(test thread-safe-access
+  (with-empty-state
+    ;; Test that thread-safe functions work correctly
+    (let ((obj1 (make-instance 'rl::item :x 5 :y 5))
+          (obj2 (make-instance 'rl::item :x 5 :y 5)))
+      
+      ;; Test safe add/remove operations
+      (finishes (rl::safe-push-to-game-objects obj1))
+      (finishes (rl::safe-push-to-pos-cache obj1 5 5))
+      (finishes (rl::safe-push-to-game-objects obj2))
+      (finishes (rl::safe-push-to-pos-cache obj2 5 5))
+      
+      ;; Verify objects were added
+      (is (= (length (rl::safe-get-pos-cache-at 5 5)) 2))
+      
+      ;; Test safe remove operations
+      (finishes (rl::safe-remove-from-pos-cache obj1 5 5))
+      (finishes (rl::safe-remove-from-game-objects obj1))
+      
+      ;; Verify removal worked
+      (is (= (length (rl::safe-get-pos-cache-at 5 5)) 1))
+      
+      ;; Clear state properly
+      (finishes (rl::clear-objects))))) 

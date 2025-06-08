@@ -4,6 +4,9 @@
 
 (defparameter *log* '())
 
+(defvar *game-state-lock* (bt:make-lock "game-state-lock")
+  "Lock for thread-safe access to *game-objects* and *pos-cache*")
+
 (defun write-to-log (format-control &rest format-args)
   (push (apply #'format nil format-control format-args) *log*))
 
@@ -36,21 +39,18 @@
 (define-condition quit-condition () ())
 
 (defun add-object (obj)
-  (push obj *game-objects*)
+  (safe-push-to-game-objects obj)
   (when (typep obj 'pos)
-    (push obj (aref *pos-cache* (x obj) (y obj))))
+    (safe-push-to-pos-cache obj (x obj) (y obj)))
   obj)
 
 (defun clear-objects ()
-  (setf *game-objects* '())
-  (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
-                                :element-type 'list
-                                :initial-element '())))
+  (safe-clear-game-state))
 
 (defun clear-position (pos)
   (loop for obj in (get-objects-at-pos pos) do
-    (removef *game-objects* obj))
-  (setf (aref *pos-cache* (x pos) (y pos)) '()))
+    (safe-remove-from-game-objects obj))
+  (safe-set-pos-cache-at (x pos) (y pos) '()))
 
 (defmethod dump-object ((obj visible) &optional attributes)
   (list :name (make-keyword (class-name (primary-class-of-mixin obj)))

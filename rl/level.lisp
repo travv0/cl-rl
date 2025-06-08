@@ -84,11 +84,12 @@
           collect chunk))
 
 (defun save-and-unload-chunk (chunk-pos)
-  (save-chunk chunk-pos)
+  "Save and unload a chunk. Must be called with *game-state-lock* held."
+  (%save-chunk chunk-pos)
   (unload-chunk chunk-pos))
 
-(defun save-chunk (chunk-pos)
-  "save chunk with chunk-pos being its top-left corner to disk"
+(defun %save-chunk (chunk-pos)
+  "Internal version of save-chunk. Requires *game-state-lock* to be held."
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
     (with-standard-io-syntax
       (with-output-to-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y)
@@ -98,6 +99,11 @@
                                  nconc (loop for x from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*)
                                              nconc (reverse (aref *pos-cache* x y)))))
                s)))))
+
+(defun save-chunk (chunk-pos)
+  "Save chunk with chunk-pos being its top-left corner to disk. Thread-safe."
+  (bt:with-lock-held (*game-state-lock*)
+    (%save-chunk chunk-pos)))
 
 (defun save-world ()
   "save all chunks of world to disk"
@@ -122,24 +128,72 @@
             (add-object obj)))))))
 
 (defun ensure-chunks-loaded (chunk-positions)
+  "Load chunks that aren't already loaded. Must be called with lock held."
   (loop for pos in chunk-positions
         unless (aref *pos-cache* (x pos) (y pos))
           do (load-chunk pos)))
 
 (defun ensure-chunks-unloaded (chunk-positions)
+  "Save and unload chunks that are loaded. Must be called with lock held."
   (loop for pos in chunk-positions
         when (aref *pos-cache* (x pos) (y pos))
           do (save-and-unload-chunk pos)))
 
-(defvar *chunk-lock* (bt:make-lock))
+(defvar *chunk-loader-thread* nil
+  "Thread for loading/unloading chunks in the background")
+
+;;; Thread-safe accessor functions
+
+(defun safe-get-pos-cache-at (x y)
+  "Thread-safe read from pos-cache"
+  (bt:with-lock-held (*game-state-lock*)
+    (aref *pos-cache* x y)))
+
+(defun safe-set-pos-cache-at (x y value)
+  "Thread-safe write to pos-cache"
+  (bt:with-lock-held (*game-state-lock*)
+    (setf (aref *pos-cache* x y) value)))
+
+(defun safe-push-to-pos-cache (obj x y)
+  "Thread-safe push to pos-cache"
+  (bt:with-lock-held (*game-state-lock*)
+    (push obj (aref *pos-cache* x y))))
+
+(defun safe-remove-from-pos-cache (obj x y)
+  "Thread-safe remove from pos-cache"
+  (bt:with-lock-held (*game-state-lock*)
+    (removef (aref *pos-cache* x y) obj)))
+
+(defun safe-push-to-game-objects (obj)
+  "Thread-safe push to game-objects"
+  (bt:with-lock-held (*game-state-lock*)
+    (push obj *game-objects*)))
+
+(defun safe-remove-from-game-objects (obj)
+  "Thread-safe remove from game-objects"
+  (bt:with-lock-held (*game-state-lock*)
+    (removef *game-objects* obj)))
+
+(defun safe-clear-game-state ()
+  "Thread-safe clear of game state"
+  (bt:with-lock-held (*game-state-lock*)
+    (setf *game-objects* '())
+    (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
+                                  :element-type 'list
+                                  :initial-element '()))))
 
 (defun ensure-chunks ()
-  (bt:with-lock-held (*chunk-lock*)
+  (bt:with-lock-held (*game-state-lock*)
     (ensure-chunks-loaded (chunks-to-show))
     (ensure-chunks-unloaded (chunks-to-unload))))
 
 (defun update-chunks ()
-  (bt:make-thread #'ensure-chunks))
+  "Update chunks in a background thread. Reuses existing thread if still running."
+  (when (or (null *chunk-loader-thread*)
+            (not (bt:thread-alive-p *chunk-loader-thread*)))
+    (setf *chunk-loader-thread* 
+          (bt:make-thread #'ensure-chunks 
+                          :name "chunk-loader"))))
 
 (defun grass-area-noise (x y seed)
   (let ((noise (* (black-tie:perlin-noise-sf (/ x 250.0) (/ y 250.0) (/ seed 1.0)) 0.5)))
@@ -255,27 +309,32 @@
   (make-instance (mix 'opaque 'solid 'door) :x x :y y))
 
 (defun get-objects-at-pos (pos)
+  "Returns all visible objects at the given position. Thread-safe."
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
     (remove-if-not (op (typep _ 'visible))
-                   (aref *pos-cache* (x pos) (y pos)))))
+                   (safe-get-pos-cache-at (x pos) (y pos)))))
 
 (defun get-object-at-pos (pos)
+  "Returns the first visible object at the given position. Thread-safe."
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
     (find-if (op (typep _ 'visible))
-             (aref *pos-cache* (x pos) (y pos)))))
+             (safe-get-pos-cache-at (x pos) (y pos)))))
 
 (defun get-visible-objects-at-pos (pos)
+  "Returns all objects that should be displayed at the given position. Thread-safe."
   (declare (optimize speed))
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
-    (remove-if-not #'should-display (aref *pos-cache* (x pos) (y pos)))))
+    (remove-if-not #'should-display 
+                   (safe-get-pos-cache-at (x pos) (y pos)))))
 
 (defun get-visible-object-at-pos (pos)
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
-    (find-if #'should-display (aref *pos-cache* (x pos) (y pos)))))
+    (find-if #'should-display 
+             (safe-get-pos-cache-at (x pos) (y pos)))))
 
 (defun terrain-p (pos)
   (typep pos 'terrain))
@@ -283,7 +342,8 @@
 (defun get-terrain-at-pos (pos)
   (when (and (<= 0 (x pos) (1- *stage-width*))
              (<= 0 (y pos) (1- *stage-height*)))
-    (find-if #'terrain-p (aref *pos-cache* (x pos) (y pos)))))
+    (find-if #'terrain-p 
+             (safe-get-pos-cache-at (x pos) (y pos)))))
 
 (defun random-pos ()
   (loop for x = (random *stage-width*)
