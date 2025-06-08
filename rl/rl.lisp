@@ -23,7 +23,8 @@
       (mixin-class (lastcar (c2mop:class-direct-superclasses class)))
       (t (first (c2mop:class-precedence-list class))))))
 
-(defparameter *name-cache* (make-hash-table))
+(defparameter *name-cache* (make-hash-table :test 'eq :weakness :key)
+  "Weak hash table for caching display names. Keys are automatically removed when objects are GC'd.")
 
 (defmethod display-name (obj)
   (if-let ((name (gethash obj *name-cache*)))

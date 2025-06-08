@@ -57,3 +57,16 @@
 
 (test quit-condition
   (is (typep (make-condition 'rl::quit-condition) 'rl::quit-condition)))
+
+(test name-cache-weak-table
+  (with-empty-state
+    ;; Test that name cache is a hash table
+    (is (hash-table-p rl::*name-cache*))
+    ;; Test that display names are cached
+    (let ((obj (make-instance 'rl::item :x 0 :y 0)))
+      (let ((name1 (rl::display-name obj))
+            (name2 (rl::display-name obj)))
+        (is (string= name1 name2))
+        (is (gethash obj rl::*name-cache*))
+        ;; Verify it's using object identity
+        (is (eq (hash-table-test rl::*name-cache*) 'eq))))))
