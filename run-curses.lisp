@@ -18,10 +18,6 @@
 (format t "Loading RL curses interface...~%")
 (ql:quickload :rl-curses :silent t)
 
-;; Load bounds checking patch
-(load (merge-pathnames "rl-curses-bounds-fix.lisp" 
-                       (pathname (directory-namestring *load-pathname*))))
-
 ;; Run the game with error handling
 (format t "Starting game...~%")
 (format t "Make sure your terminal window is at least 80x24 characters!~%")
