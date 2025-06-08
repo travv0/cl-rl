@@ -46,8 +46,8 @@
 (defmethod should-display ((obj visible))
   (can-see obj))
 
-(defparameter *stage-width* 100)
-(defparameter *stage-height* 100)
+(defparameter *stage-width* 200)
+(defparameter *stage-height* 200)
 
 (defparameter *chunk-width* 40)
 (defparameter *chunk-height* 40)
