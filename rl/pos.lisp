@@ -93,6 +93,16 @@ list of `pos's"
           result
           (reverse result)))))
 
+(defmethod in-bounds-p ((p pos))
+  "Check if a position is within the stage bounds"
+  (and (<= 0 (x p) (1- *stage-width*))
+       (<= 0 (y p) (1- *stage-height*))))
+
+(defun in-bounds-xy-p (x y)
+  "Check if x,y coordinates are within the stage bounds"
+  (and (<= 0 x (1- *stage-width*))
+       (<= 0 y (1- *stage-height*))))
+
 (defmethod update-pos ((obj pos) new-x new-y)
   "update the position of an object. use this instead of setting
 object's x and y coordinates directly."

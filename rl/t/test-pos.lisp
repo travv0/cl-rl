@@ -98,3 +98,23 @@
       (is (= (rl::y obj) 8))
       (is (not (member obj (aref rl::*pos-cache* 5 5))))
       (is (member obj (aref rl::*pos-cache* 7 8))))))
+
+(test in-bounds-checking
+  "Test unified bounds checking functions"
+  ;; Test in-bounds-p
+  (is (rl::in-bounds-p (rl::pos 0 0)))
+  (is (rl::in-bounds-p (rl::pos 50 50)))
+  (is (rl::in-bounds-p (rl::pos (1- rl::*stage-width*) (1- rl::*stage-height*))))
+  (is (not (rl::in-bounds-p (rl::pos -1 0))))
+  (is (not (rl::in-bounds-p (rl::pos 0 -1))))
+  (is (not (rl::in-bounds-p (rl::pos rl::*stage-width* 0))))
+  (is (not (rl::in-bounds-p (rl::pos 0 rl::*stage-height*))))
+  
+  ;; Test in-bounds-xy-p
+  (is (rl::in-bounds-xy-p 0 0))
+  (is (rl::in-bounds-xy-p 50 50))
+  (is (rl::in-bounds-xy-p (1- rl::*stage-width*) (1- rl::*stage-height*)))
+  (is (not (rl::in-bounds-xy-p -1 0)))
+  (is (not (rl::in-bounds-xy-p 0 -1)))
+  (is (not (rl::in-bounds-xy-p rl::*stage-width* 0)))
+  (is (not (rl::in-bounds-xy-p 0 rl::*stage-height*))))

@@ -70,8 +70,7 @@
                      (list 0 0))))
     (loop for diff in diffs
           for p = (add player-chunk (to-pos diff))
-          when (and (<= 0 (x p) (1- *stage-width*))
-                    (<= 0 (y p) (1- *stage-height*)))
+          when (in-bounds-p p)
             collect p)))
 
 (defun all-chunks ()
@@ -375,29 +374,25 @@
 
 (defun get-objects-at-pos (pos)
   "Returns all visible objects at the given position. Thread-safe."
-  (when (and (<= 0 (x pos) (1- *stage-width*))
-             (<= 0 (y pos) (1- *stage-height*)))
+  (when (in-bounds-p pos)
     (remove-if-not (op (typep _ 'visible))
                    (safe-get-pos-cache-at (x pos) (y pos)))))
 
 (defun get-object-at-pos (pos)
   "Returns the first visible object at the given position. Thread-safe."
-  (when (and (<= 0 (x pos) (1- *stage-width*))
-             (<= 0 (y pos) (1- *stage-height*)))
+  (when (in-bounds-p pos)
     (find-if (op (typep _ 'visible))
              (safe-get-pos-cache-at (x pos) (y pos)))))
 
 (defun get-visible-objects-at-pos (pos)
   "Returns all objects that should be displayed at the given position. Thread-safe."
   (declare (optimize speed))
-  (when (and (<= 0 (x pos) (1- *stage-width*))
-             (<= 0 (y pos) (1- *stage-height*)))
+  (when (in-bounds-p pos)
     (remove-if-not #'should-display 
                    (safe-get-pos-cache-at (x pos) (y pos)))))
 
 (defun get-visible-object-at-pos (pos)
-  (when (and (<= 0 (x pos) (1- *stage-width*))
-             (<= 0 (y pos) (1- *stage-height*)))
+  (when (in-bounds-p pos)
     (find-if #'should-display 
              (safe-get-pos-cache-at (x pos) (y pos)))))
 
@@ -405,8 +400,7 @@
   (typep pos 'terrain))
 
 (defun get-terrain-at-pos (pos)
-  (when (and (<= 0 (x pos) (1- *stage-width*))
-             (<= 0 (y pos) (1- *stage-height*)))
+  (when (in-bounds-p pos)
     (find-if #'terrain-p 
              (safe-get-pos-cache-at (x pos) (y pos)))))
 
