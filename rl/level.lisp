@@ -69,10 +69,10 @@
                      (list (- *chunk-width*) 0)
                      (list 0 0))))
     (loop for diff in diffs
-          for pos = (add player-chunk (to-pos diff))
-          when (and (<= 0 (x pos) (1- *stage-width*))
-                    (<= 0 (y pos) (1- *stage-height*)))
-            collect pos)))
+          for p = (add player-chunk (to-pos diff))
+          when (and (<= 0 (x p) (1- *stage-width*))
+                    (<= 0 (y p) (1- *stage-height*)))
+            collect p)))
 
 (defun all-chunks ()
   (loop for y from 0 below *stage-height* by *chunk-height*
@@ -90,7 +90,7 @@
 
 (defun chunks-to-unload ()
   (loop for chunk in (all-chunks)
-        unless (member chunk (chunks-to-show) :test #'same)
+        unless (member chunk (chunks-to-show) :test #'pos-equal)
           collect chunk))
 
 (defun save-and-unload-chunk (chunk-pos)
@@ -111,9 +111,9 @@
               (with-output-to-file (s filename
                                       :if-exists :overwrite
                                       :if-does-not-exist :create)
-                (prin1 (ms:marshal (loop for y from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*)
-                                         nconc (loop for x from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*)
-                                                     nconc (reverse (aref *pos-cache* x y)))))
+                (prin1 (ms:marshal (loop for cy from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*)
+                                         nconc (loop for cx from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*)
+                                                     nconc (reverse (aref *pos-cache* cx cy)))))
                        s))
             ;; Return t to indicate success
             t))
@@ -145,9 +145,9 @@
 
 (defun unload-chunk (chunk-pos)
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
-    (loop for y from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*) do
-      (loop for x from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*) do
-        (clear-position (pos x y))))))
+    (loop for cy from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*) do
+      (loop for cx from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*) do
+        (%clear-position (pos cx cy))))))
 
 (defun load-chunk (chunk-pos)
   "Load a chunk from disk. Handles errors gracefully."
@@ -159,7 +159,7 @@
               (when s
                 (let ((objs (ms:unmarshal (read s))))
                   (loop for obj in objs do
-                    (add-object obj))))))
+                    (%add-object obj))))))
         (error (e)
           (write-to-log "Failed to load chunk ~d,~d: ~a" chunk-x chunk-y e)
           ;; Continue without the chunk - it will be regenerated if needed
@@ -219,6 +219,33 @@
     (setf *pos-cache* (make-array (list *stage-width* *stage-height*)
                                   :element-type 'list
                                   :initial-element '()))))
+
+;; Internal versions that assume lock is already held
+(defun %push-to-game-objects (obj)
+  "Internal version - requires lock to be held"
+  (push obj *game-objects*))
+
+(defun %push-to-pos-cache (obj x y)
+  "Internal version - requires lock to be held"
+  (push obj (aref *pos-cache* x y)))
+
+(defun %add-object (obj)
+  "Internal version of add-object - requires lock to be held"
+  (%push-to-game-objects obj)
+  (when (typep obj 'pos)
+    (%push-to-pos-cache obj (x obj) (y obj)))
+  obj)
+
+(defun %remove-from-game-objects (obj)
+  "Internal version - requires lock to be held"
+  (removef *game-objects* obj))
+
+(defun %clear-position (pos)
+  "Internal version of clear-position - requires lock to be held"
+  (loop for obj in (remove-if-not (op (typep _ 'visible))
+                                  (aref *pos-cache* (x pos) (y pos)))
+        do (%remove-from-game-objects obj))
+  (setf (aref *pos-cache* (x pos) (y pos)) '()))
 
 (defun ensure-chunks ()
   (bt:with-lock-held (*game-state-lock*)
@@ -340,8 +367,8 @@
   (make-instance 'sand :x x :y y))
 
 (defun make-spawn ()
-  (let ((pos (random-pos)))
-    (make-instance 'spawn :x (x pos) :y (y pos))))
+  (let ((p (random-pos)))
+    (make-instance 'spawn :x (x p) :y (y p))))
 
 (defun make-door (x y)
   (make-instance (mix 'opaque 'solid 'door) :x x :y y))
