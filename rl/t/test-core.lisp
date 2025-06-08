@@ -70,3 +70,26 @@
         (is (gethash obj rl::*name-cache*))
         ;; Verify it's using object identity
         (is (eq (hash-table-test rl::*name-cache*) 'eq))))))
+
+(test movement-processing
+  "Test unified movement processing"
+  (with-empty-state
+    (let ((player (make-instance 'rl::player :x 10 :y 10)))
+      (setf rl::*player* player)
+      
+      ;; Test basic movement
+      (rl::process-movement -1 nil)
+      (is (= (rl::dx player) -1))
+      (is (= (rl::dy player) 0))
+      
+      ;; Test diagonal movement
+      (rl::process-movement 1 -1)
+      (is (= (rl::dx player) 1))
+      (is (= (rl::dy player) -1))
+      
+      ;; Test running
+      (rl::delete-from-mix player 'rl::running)
+      (rl::process-movement -1 1 t)
+      (is (= (rl::dx player) -1))
+      (is (= (rl::dy player) 1))
+      (is (typep player 'rl::running)))))

@@ -166,46 +166,22 @@
            (ecase action
              ((nil))
              (:wait t)
-             (:move-left (setf (dx *player*) -1) t)
-             (:move-up (setf (dy *player*) -1) t)
-             (:move-right (setf (dx *player*) 1) t)
-             (:move-down (setf (dy *player*) 1) t)
-             (:move-up-left (setf (dx *player*) -1 (dy *player*) -1) t)
-             (:move-up-right (setf (dx *player*) 1 (dy *player*) -1) t)
-             (:move-down-left (setf (dx *player*) -1 (dy *player*) 1) t)
-             (:move-down-right (setf (dx *player*) 1 (dy *player*) 1) t)
-             (:run-left
-              (ensure-mix *player* 'running)
-              (setf (dx *player*) -1)
-              t)
-             (:run-up
-              (ensure-mix *player* 'running)
-              (setf (dy *player*) -1)
-              t)
-             (:run-right
-              (ensure-mix *player* 'running)
-              (setf (dx *player*) 1)
-              t)
-             (:run-down
-              (ensure-mix *player* 'running)
-              (setf (dy *player*) 1)
-              t)
-             (:run-up-left
-              (ensure-mix *player* 'running)
-              (setf (dx *player*) -1 (dy *player*) -1)
-              t)
-             (:run-up-right
-              (ensure-mix *player* 'running)
-              (setf (dx *player*) 1 (dy *player*) -1)
-              t)
-             (:run-down-left
-              (ensure-mix *player* 'running)
-              (setf (dx *player*) -1 (dy *player*) 1)
-              t)
-             (:run-down-right
-              (ensure-mix *player* 'running)
-              (setf (dx *player*) 1 (dy *player*) 1)
-              t)
+             (:move-left (process-movement -1 nil))
+             (:move-up (process-movement nil -1))
+             (:move-right (process-movement 1 nil))
+             (:move-down (process-movement nil 1))
+             (:move-up-left (process-movement -1 -1))
+             (:move-up-right (process-movement 1 -1))
+             (:move-down-left (process-movement -1 1))
+             (:move-down-right (process-movement 1 1))
+             (:run-left (process-movement -1 nil t))
+             (:run-up (process-movement nil -1 t))
+             (:run-right (process-movement 1 nil t))
+             (:run-down (process-movement nil 1 t))
+             (:run-up-left (process-movement -1 -1 t))
+             (:run-up-right (process-movement 1 -1 t))
+             (:run-down-left (process-movement -1 1 t))
+             (:run-down-right (process-movement 1 1 t))
              (:open-inventory (setf *state* :inventory) nil)
              (:reset (initialize) nil)
              (:quit (error 'quit-condition))))
@@ -246,6 +222,16 @@
           while (plusp (cooldown *player*))))
 
   (list *state* (dump-state)))
+
+(defun process-movement (dx dy &optional running-p)
+  "Process player movement with optional running mode"
+  (when running-p
+    (ensure-mix *player* 'running))
+  (when dx
+    (setf (dx *player*) dx))
+  (when dy
+    (setf (dy *player*) dy))
+  t)
 
 (defun get-all-subclasses (class)
   (let* ((class (etypecase class
