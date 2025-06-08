@@ -89,3 +89,26 @@
       ;; wall-different-p takes (pos prev-x prev-y)
       (is (or (rl::wall-different-p pos1 7 7)
               (not (rl::wall-different-p pos1 7 7)))))))
+
+(test astar-variable-shadowing-regression
+  (with-empty-state
+    ;; This test ensures the 'pos' parameter doesn't shadow the pos function in get-neighbors
+    ;; The bug was: inside lambda (pos), trying to call (pos (car pos) ...)
+    (let ((start (rl::pos 5 5))
+          (goal (rl::pos 8 8)))
+      ;; Add some walls but leave a path
+      (rl::add-object (rl::make-wall 6 5))
+      (rl::add-object (rl::make-wall 6 6))
+      (rl::add-object (rl::make-wall 6 7))
+      
+      ;; This should not error with "Invalid function name: #<RL::POS ...>"
+      (finishes (rl::get-neighbors (cons 5 5) goal))
+      
+      ;; Verify pathfinding still works
+      (let ((path (rl::find-path start goal)))
+        (is (not (null path)))
+        ;; Path contains cons cells (x . y)
+        (let ((last-pos (first (last path))))
+          (is (consp last-pos))
+          (is (= (car last-pos) (rl::x goal)))
+          (is (= (cdr last-pos) (rl::y goal))))))))
