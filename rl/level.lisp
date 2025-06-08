@@ -3,6 +3,16 @@
 (defvar *pos-cache*)
 (defvar *game-objects*)
 
+(defun ensure-data-directories ()
+  "Ensure required data directories exist. Should be called at game startup."
+  (handler-case
+      (progn
+        (ensure-directories-exist "data/chunks/")
+        t)
+    (error (e)
+      (write-to-log "Failed to create data directories: ~a" e)
+      nil)))
+
 (define-class terrain ()
   ((%cooldown-modifier :initarg :cooldown-modifier :initform 1 :accessor cooldown-modifier)))
 
@@ -85,20 +95,32 @@
 
 (defun save-and-unload-chunk (chunk-pos)
   "Save and unload a chunk. Must be called with *game-state-lock* held."
-  (%save-chunk chunk-pos)
-  (unload-chunk chunk-pos))
+  (when (%save-chunk chunk-pos)
+    ;; Only unload if save succeeded
+    (unload-chunk chunk-pos)))
 
 (defun %save-chunk (chunk-pos)
   "Internal version of save-chunk. Requires *game-state-lock* to be held."
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
-    (with-standard-io-syntax
-      (with-output-to-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y)
-                              :if-exists :overwrite
-                              :if-does-not-exist :create)
-        (prin1 (ms:marshal (loop for y from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*)
-                                 nconc (loop for x from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*)
-                                             nconc (reverse (aref *pos-cache* x y)))))
-               s)))))
+    (let ((filename (format nil "data/chunks/~d_~d" chunk-x chunk-y)))
+      (handler-case
+          (progn
+            ;; Ensure directory exists
+            (ensure-directories-exist "data/chunks/")
+            (with-standard-io-syntax
+              (with-output-to-file (s filename
+                                      :if-exists :overwrite
+                                      :if-does-not-exist :create)
+                (prin1 (ms:marshal (loop for y from chunk-y below (min (+ chunk-y *chunk-height*) *stage-height*)
+                                         nconc (loop for x from chunk-x below (min (+ chunk-x *chunk-width*) *stage-width*)
+                                                     nconc (reverse (aref *pos-cache* x y)))))
+                       s))
+            ;; Return t to indicate success
+            t))
+        (error (e)
+          (write-to-log "Failed to save chunk ~d,~d: ~a" chunk-x chunk-y e)
+          ;; Return nil to indicate failure
+          nil)))))
 
 (defun save-chunk (chunk-pos)
   "Save chunk with chunk-pos being its top-left corner to disk. Thread-safe."
@@ -106,8 +128,16 @@
     (%save-chunk chunk-pos)))
 
 (defun save-world ()
-  "save all chunks of world to disk"
-  (loop for chunk in (all-chunks) do (save-chunk chunk)))
+  "Save all chunks of world to disk. Returns number of chunks successfully saved."
+  (let ((saved 0)
+        (failed 0))
+    (loop for chunk in (all-chunks)
+          do (if (save-chunk chunk)
+                 (incf saved)
+                 (incf failed)))
+    (when (> failed 0)
+      (write-to-log "Failed to save ~d chunks" failed))
+    saved))
 
 (defun unload-world ()
   "clear all game objects"
@@ -120,12 +150,20 @@
         (clear-position (pos x y))))))
 
 (defun load-chunk (chunk-pos)
+  "Load a chunk from disk. Handles errors gracefully."
   (with-accessors ((chunk-x x) (chunk-y y)) chunk-pos
-    (with-standard-input-syntax
-      (with-input-from-file (s (format nil "data/chunks/~d_~d" chunk-x chunk-y))
-        (let ((objs (ms:unmarshal (read s))))
-          (loop for obj in objs do
-            (add-object obj)))))))
+    (let ((filename (format nil "data/chunks/~d_~d" chunk-x chunk-y)))
+      (handler-case
+          (with-standard-input-syntax
+            (with-input-from-file (s filename :if-does-not-exist nil)
+              (when s
+                (let ((objs (ms:unmarshal (read s))))
+                  (loop for obj in objs do
+                    (add-object obj))))))
+        (error (e)
+          (write-to-log "Failed to load chunk ~d,~d: ~a" chunk-x chunk-y e)
+          ;; Continue without the chunk - it will be regenerated if needed
+          nil)))))
 
 (defun ensure-chunks-loaded (chunk-positions)
   "Load chunks that aren't already loaded. Must be called with lock held."

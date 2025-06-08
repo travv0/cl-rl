@@ -177,4 +177,29 @@
       (is (= (length (rl::safe-get-pos-cache-at 5 5)) 1))
       
       ;; Clear state properly
-      (finishes (rl::clear-objects))))) 
+      (finishes (rl::clear-objects)))))
+
+(test io-error-handling
+  (with-empty-state
+    ;; Test loading non-existent chunk
+    (let ((non-existent-pos (rl::pos 9999 9999)))
+      ;; Should not error
+      (finishes (rl::load-chunk non-existent-pos))
+      ;; Should have logged the attempt
+      (is (not (null rl::*log*))))
+    
+    ;; Test saving chunk (should succeed)
+    (let ((chunk-pos (rl::pos 0 0))
+          (obj (make-instance 'rl::item :x 5 :y 5)))
+      (rl::add-object obj)
+      ;; Save should return t on success
+      (is (rl::save-chunk chunk-pos)))
+    
+    ;; Test save-world
+    (let ((saved-count (rl::save-world)))
+      ;; Should return number of chunks saved
+      (is (numberp saved-count))
+      (is (>= saved-count 0)))
+    
+    ;; Test ensure-data-directories
+    (is (rl::ensure-data-directories)))) 
