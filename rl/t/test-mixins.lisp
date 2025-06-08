@@ -176,3 +176,41 @@
         (rl::cool-down player)
         (is (= (rl::stamina player) reduced-stamina))
         (is (= (rl::cooldown player) 4))))))
+
+(test terrain-movement-modifier
+  (with-empty-state
+    ;; Create a moveable object
+    (let ((obj (make-instance (rl::mix 'rl::moveable 'rl::pos) :x 5 :y 5 :dx 1 :dy 0)))
+      (rl::add-object obj)
+      
+      ;; Create terrain with cooldown modifier at destination
+      (let ((sand (rl::make-sand 6 5)))  ; Sand has 1.2x cooldown modifier
+        (rl::add-object sand)
+        
+        ;; Update the object to move onto sand
+        (rl::update obj)
+        
+        ;; Verify movement happened
+        (is (= (rl::x obj) 6))
+        (is (= (rl::y obj) 5))
+        
+        ;; Verify cooldown was modified by terrain (should be > base cooldown)
+        (is (> (rl::cooldown obj) 0))))))
+
+(test variable-shadowing-regression
+  (with-empty-state
+    ;; This test ensures the 'pos' variable shadowing bug doesn't return
+    ;; The bug was: (if-let ((pos (get-terrain-at-pos (pos x y)))) ...)
+    ;; where 'pos' variable shadowed the 'pos' function
+    (let ((obj (make-instance (rl::mix 'rl::moveable 'rl::pos) :x 5 :y 5 :dx 1 :dy 1)))
+      (rl::add-object obj)
+      
+      ;; Create some terrain
+      (rl::add-object (rl::make-grass 6 6))
+      
+      ;; This should not error with "Invalid function name: #<RL::POS ...>"
+      (finishes (rl::update obj))
+      
+      ;; Verify object moved
+      (is (= (rl::x obj) 6))
+      (is (= (rl::y obj) 6)))))
