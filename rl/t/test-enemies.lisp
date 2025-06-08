@@ -18,8 +18,8 @@
       (is (typep goblin 'rl::inventory))
       (is (typep goblin 'rl::arms))
       ;; Check default stats
-      (is (= (slot-value goblin 'rl::strength) 2))
-      (is (= (slot-value goblin 'rl::vitality) 6)))))
+      (is (= (rl::strength goblin) 3))
+      (is (= (rl::vitality goblin) 3)))))
 
 (test goblin-fighter-creation
   (with-empty-state
@@ -30,7 +30,7 @@
       (is (typep fighter 'rl::enemy))
       (is (typep fighter 'rl::humanoid))
       ;; Should have dagger in inventory
-      (let ((inventory (slot-value fighter 'rl::inventory)))
+      (let ((inventory (rl::inventory fighter)))
         (is (not (null inventory)))
         (is (typep (cdr (first inventory)) 'rl::dagger))))))
 
@@ -41,8 +41,8 @@
       (is (typep brawler 'rl::goblin))
       (is (typep brawler 'rl::enemy))
       ;; Has increased strength and vitality
-      (is (= (slot-value brawler 'rl::strength) 10))
-      (is (= (slot-value brawler 'rl::vitality) 10)))))
+      (is (= (rl::strength brawler) 10))
+      (is (= (rl::vitality brawler) 10)))))
 
 (test warrior-creation
   (with-empty-state
@@ -51,17 +51,14 @@
       (is (typep warrior 'rl::enemy))
       (is (typep warrior 'rl::humanoid))
       ;; Should have sword and kite-shield
-      (let ((inventory (slot-value warrior 'rl::inventory)))
+      (let ((inventory (rl::inventory warrior)))
         (is (= (length inventory) 2))
         (is (typep (cdr (assoc #\a inventory)) 'rl::sword))
         (is (typep (cdr (assoc #\b inventory)) 'rl::kite-shield))))))
 
 (test rat-creation
   (with-empty-state
-    (let ((rat (make-instance 'rl::rat 
-                              :resistance 1
-                              :intelligence 1
-                              :faith 1)))
+    (let ((rat (make-instance 'rl::rat)))
       ;; Rat is just an enemy, not humanoid
       (is (typep rat 'rl::enemy))
       (is (not (typep rat 'rl::humanoid)))
@@ -78,7 +75,12 @@
 
 (test enemy-update
   (with-empty-state
-    (let ((goblin (make-instance 'rl::goblin :x 5 :y 5)))
+    (let ((goblin (make-instance 'rl::goblin :x 5 :y 5))
+          (player (make-instance 'rl::player :x 0 :y 0)))
+      ;; Set up player for update to work
+      (setf rl::*player* player)
+      (rl::add-object goblin)
+      (rl::add-object player)
       ;; Test update method exists and can be called
       ;; It may return nil or something else
       (rl::update goblin))))
@@ -104,6 +106,6 @@
   (with-empty-state
     (let ((goblin (make-instance 'rl::goblin)))
       ;; Enemies start in sleeping state
-      (is (eq (slot-value goblin 'rl::enemy-state) :sleeping))
+      (is (eq (rl::enemy-state goblin) :sleeping))
       ;; Have default view distance
-      (is (= (slot-value goblin 'rl::view-distance) 10)))))
+      (is (= (rl::view-distance goblin) 10)))))

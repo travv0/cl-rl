@@ -41,7 +41,10 @@
   ((%strength :initform 2)
    (%dexterity :initform 2)
    (%endurance :initform 2)
-   (%vitality :initform 2)))
+   (%vitality :initform 2)
+   (%resistance :initform 1)
+   (%intelligence :initform 1)
+   (%faith :initform 1)))
 
 (defmethod print-object ((enemy enemy) stream)
   (print-unreadable-object (enemy stream :type t :identity t)

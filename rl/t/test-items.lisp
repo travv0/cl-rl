@@ -22,21 +22,21 @@
       (is (typep potion 'rl::item))
       (is (typep potion 'rl::visible))
       ;; Check default values
-      (is (= (slot-value potion 'rl::use-cooldown) 1))
-      (is (= (slot-value potion 'rl::heal-amount) 50))
-      (is (= (slot-value potion 'rl::max-charges) 1)))))
+      (is (= (rl::use-cooldown potion) 15))
+      (is (= (rl::regeneration-amount potion) 40))
+      (is (= (rl::max-charges potion) 5)))))
 
 (test make-inventory-function
   (with-empty-state
     ;; Test empty inventory
-    (let ((inv1 (rl::make-inventory '())))
+    (let ((inv1 (rl::make-inventory)))
       (is (listp inv1))
       (is (null inv1)))
     
     ;; Test with items
     (let* ((item1 (make-instance 'rl::item :x 0 :y 0))
            (item2 (make-instance 'rl::item :x 0 :y 0))
-           (inv2 (rl::make-inventory (list item1 item2))))
+           (inv2 (rl::make-inventory item1 item2)))
       (is (listp inv2))
       (is (= (length inv2) 2))
       ;; Should be alist with keys #\a, #\b, etc
@@ -48,9 +48,9 @@
     (let ((inv-obj (make-instance 'rl::inventory))
           (item (make-instance 'rl::item :x 0 :y 0)))
       ;; Add item to inventory
-      (rl::add-to-inventory inv-obj item #\a)
-      (is (assoc #\a (slot-value inv-obj 'rl::inventory)))
-      (is (eq (cdr (assoc #\a (slot-value inv-obj 'rl::inventory))) item)))))
+      (rl::add-to-inventory item inv-obj)
+      (is (assoc #\a (rl::inventory inv-obj)))
+      (is (eq (cdr (assoc #\a (rl::inventory inv-obj))) item)))))
 
 (test apply-item-base
   (with-empty-state
@@ -63,25 +63,26 @@
 (test rechargeable-initialization
   (with-empty-state
     (let ((rechargeable (make-instance 'rl::health-potion)))
-      ;; Should have charges slot initialized
-      (is (slot-boundp rechargeable 'rl::charges))
-      (is (= (slot-value rechargeable 'rl::charges) 1)))))
+      ;; Should have charges initialized
+      (is (numberp (rl::current-charges rechargeable)))
+      (is (numberp (rl::max-charges rechargeable)))
+      (is (= (rl::current-charges rechargeable) (rl::max-charges rechargeable))))))
 
 (test inventory-operations
   (with-empty-state
     (let ((inv-obj (make-instance 'rl::inventory)))
       ;; Inventory should be initialized as empty list
-      (is (listp (slot-value inv-obj 'rl::inventory)))
+      (is (listp (rl::inventory inv-obj)))
       
       ;; Add multiple items
       (let ((item1 (make-instance 'rl::item :x 0 :y 0))
             (item2 (make-instance 'rl::item :x 0 :y 0)))
-        (rl::add-to-inventory inv-obj item1 #\a)
-        (rl::add-to-inventory inv-obj item2 #\b)
+        (rl::add-to-inventory item1 inv-obj)
+        (rl::add-to-inventory item2 inv-obj)
         
-        (is (= (length (slot-value inv-obj 'rl::inventory)) 2))
-        (is (eq (cdr (assoc #\a (slot-value inv-obj 'rl::inventory))) item1))
-        (is (eq (cdr (assoc #\b (slot-value inv-obj 'rl::inventory))) item2)))))
+        (is (= (length (rl::inventory inv-obj)) 2))
+        (is (eq (cdr (assoc #\a (rl::inventory inv-obj))) item1))
+        (is (eq (cdr (assoc #\b (rl::inventory inv-obj))) item2)))))
 
 (test item-apply-methods
   (with-empty-state

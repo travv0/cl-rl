@@ -1,23 +1,26 @@
-#!/usr/bin/env sbcl --script
-
 (require :asdf)
 
-;; Load quicklisp if available
-(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
-                                       (user-homedir-pathname))))
-  (when (probe-file quicklisp-init)
-    (load quicklisp-init)))
+;; Load quicklisp
+(load #P"~/quicklisp/setup.lisp")
 
-;; Add current directory to ASDF search path
-(push (pathname (directory-namestring *load-pathname*)) asdf:*central-registry*)
+;; Add paths
+(push (merge-pathnames "rl/" (pathname (directory-namestring *load-pathname*))) 
+      asdf:*central-registry*)
+(push (merge-pathnames "travv0.utils/" (pathname (directory-namestring *load-pathname*)))
+      asdf:*central-registry*)
 
-;; Load the test system
-(handler-case
-    (progn
-      (asdf:load-system :rl/tests)
-      (funcall (intern "RUN-TESTS" :rl/tests)))
-  (error (e)
-    (format t "Error loading or running tests: ~A~%" e)
-    (sb-ext:exit :code 1)))
+;; Load dependencies quietly  
+(ql:quickload '(:alexandria :serapeum :str :black-tie 
+                :dynamic-mixins :marshal :fiveam :closer-mop)
+              :silent t)
+
+;; Load systems
+(asdf:load-system :rl :verbose nil)
+(asdf:load-system :rl/tests :verbose nil)
+
+;; Run tests with summary
+(format t "~%Running test suite...~%~%")
+
+(rl/tests:run-tests)
 
 (sb-ext:exit :code 0)
