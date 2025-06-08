@@ -344,7 +344,9 @@ terminal."
             (:inventory (draw-inventory data width height)))))
     (error (e)
       ;; Log error but don't crash
-      (format *error-output* "Display error: ~a~%" e)))
+      (format *error-output* "Display error: ~a~%Stack: ~a~%" e
+              (with-output-to-string (s)
+                (sb-debug:print-backtrace :stream s :count 5)))))
   
   (charms:refresh-window charms:*standard-window*))
 

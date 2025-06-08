@@ -152,7 +152,9 @@ starting with a keyword and containing relevant info"
                    (cooldown cooldown))
       obj
     (unless (and (zerop dx) (zerop dy))
-      (loop with collisions = (sort (check-collisions obj) #'< :key (op (distance obj (cdr _))))
+      (loop with collisions = (sort (check-collisions obj) #'< 
+                                     :key (lambda (collision) 
+                                            (distance obj (cdr collision))))
             for collision in collisions do
               (destructuring-bind (other-obj . last-pos) collision
                 (when (or (and (typep obj 'solid) (typep other-obj 'solid)))
