@@ -46,25 +46,28 @@ serialized for writing to disk should use this instead"
 
 (defmethod ms::unmarshal-fn ((version (eql (ms::coding-idiom :coding-release-no)))
                              (type (eql (ms::coding-idiom :object))) token &optional (circle-hash nil))
-  (let* ((package    (find-package (ms::object-package-name token)))
-         (values     (ms::class-slots-values  token))
-         (class      (ms::object-class-name token))
-	 (out        (etypecase class
-                       (cons (make-instance (apply #'dynamic-mixins:mix (ms::object-class-name token))))
-                       (t (allocate-instance (find-class (intern (symbol-name class)
-                                                                 package))))))
-	 (slots      (ms:class-persistent-slots  out)))
+  ;; Token structure: (:object dummy-key class-names package-name . slot-values)
+  (destructuring-bind (object-marker dummy-key class-names package-name &rest values) token
+    (declare (ignore object-marker))
+    (let* ((package (find-package package-name))
+           (out (if (listp class-names)
+                    ;; Mixin object
+                    (make-instance (apply #'dynamic-mixins:mix class-names))
+                    ;; Regular object
+                    (allocate-instance (find-class (intern (symbol-name class-names)
+                                                          package)))))
+           (slots (ms:class-persistent-slots out)))
 
-    (setf (gethash (ms::id token) circle-hash) out)
+      (setf (gethash dummy-key circle-hash) out)
 
-    (loop
-      for slot in slots
-      for value in values
-      do (if (listp value)
-             (setf (slot-value out slot)
-                   (ms::unmarshal-fn version
-                                     (ms::data-type value)
-                                     value
-                                     circle-hash))
-             (setf (slot-value out slot) (ms::unmarshal-fn version t value circle-hash))))
-    (ms:initialize-unmarshalled-instance out)))
+      (loop
+        for slot in slots
+        for value in values
+        do (if (listp value)
+               (setf (slot-value out slot)
+                     (ms::unmarshal-fn version
+                                       (first value)
+                                       value
+                                       circle-hash))
+               (setf (slot-value out slot) (ms::unmarshal-fn version t value circle-hash))))
+      (ms:initialize-unmarshalled-instance out))))
