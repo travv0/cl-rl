@@ -106,12 +106,12 @@
 (defmethod check-collisions ((obj moveable))
   (declare (optimize speed))
   (loop with collisions = '()
-        with previous-step = obj
+        with previous-step = (pos (x obj) (y obj))  ; Start with obj's position as a pos
         for step in (rest (get-line obj (pos (+ (x obj) (dx obj))
                                              (+ (y obj) (dy obj)))))
         for objs = (get-objects-at-pos step) do
           (loop for other-obj in objs
                 when (same step other-obj)
-                  do (push (cons other-obj previous-step) collisions)
-                do (setf previous-step step))
+                  do (push (cons other-obj previous-step) collisions))
+          (setf previous-step step)
         finally (return collisions)))
