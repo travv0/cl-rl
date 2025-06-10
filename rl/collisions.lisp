@@ -23,13 +23,13 @@
                     (display-name moving-obj)
                     (display-name obj))))
 
-(defconstant +unarmed-damage+ 5
+(defparameter +unarmed-damage+ 5
   "Base damage for unarmed attacks")
-(defconstant +unarmed-stamina+ 10
+(defparameter +unarmed-stamina+ 10
   "Stamina cost for unarmed attacks")
-(defconstant +unarmed-cooldown+ 2
+(defparameter +unarmed-cooldown+ 2
   "Cooldown time for unarmed attacks")
-(defconstant +unarmed-windup+ 1
+(defparameter +unarmed-windup+ 1
   "Windup time for unarmed attacks")
 
 (defmethod stamina-use ((arm arm))
