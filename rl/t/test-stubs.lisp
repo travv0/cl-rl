@@ -5,15 +5,6 @@
   (import 'serapeum:op :rl))
 
 ;; Stub out any missing functions needed for tests
-(unless (fboundp 'rl::initialize)
-  (defun rl::initialize (seed)
-    (setf rl::*seed* seed
-          rl::*turn* 1
-          rl::*log* '()
-          rl::*game-objects* '()
-          rl::*pos-cache* (make-array (list rl::*stage-width* rl::*stage-height*)
-                                      :element-type 'list
-                                      :initial-element '()))))
 
 ;; Add slot-exists-p helper if not already defined
 (unless (fboundp 'slot-exists-p)
@@ -21,9 +12,6 @@
     (find slot-name (c2mop:class-slots (class-of object))
           :key #'c2mop:slot-definition-name)))
 
-(unless (fboundp 'rl::get-modifiers)
-  (defgeneric rl::get-modifiers (obj)
-    (:method (obj) nil)))
 
 (unless (fboundp 'rl::add-modifier)
   (defgeneric rl::add-modifier (obj modifier)
@@ -194,42 +182,6 @@
   (defun rl::between-p (val min max)
     (and (>= val min) (<= val max))))
 
-;; Define missing special variables
-(unless (boundp 'rl::*stage-width*)
-  (defparameter rl::*stage-width* 80))
-
-(unless (boundp 'rl::*stage-height*)
-  (defparameter rl::*stage-height* 25))
-
-(unless (boundp 'rl::*chunk-width*)
-  (defparameter rl::*chunk-width* 100))
-
-(unless (boundp 'rl::*chunk-height*)
-  (defparameter rl::*chunk-height* 100))
-
-(unless (boundp 'rl::*player*)
-  (defparameter rl::*player* nil))
-
-(unless (boundp 'rl::*pos-cache*)
-  (defparameter rl::*pos-cache* nil))
-
-(unless (boundp 'rl::*state*)
-  (defparameter rl::*state* :play))
-
-(unless (boundp 'rl::*game-objects*)
-  (defparameter rl::*game-objects* nil))
-
-(unless (boundp 'rl::*log*)
-  (defparameter rl::*log* nil))
-
-(unless (boundp 'rl::*seed*)
-  (defparameter rl::*seed* 12345))
-
-(unless (boundp 'rl::*turn*)
-  (defparameter rl::*turn* 1))
-
-(unless (boundp 'rl::*name-cache*)
-  (defparameter rl::*name-cache* (make-hash-table)))
 
 ;; Additional stubs for collisions.lisp tests
 (unless (fboundp 'rl::get-line)
@@ -253,108 +205,6 @@
     (and (= (rl::x p1) (rl::x p2))
          (= (rl::y p1) (rl::y p2)))))
 
-;; Override check-collisions to avoid the 'same' issue
-(defmethod rl::check-collisions ((obj rl::moveable))
-  "Simplified check-collisions for testing"
-  (declare (optimize speed))
-  ;; Just return an empty list for testing
-  '())
 
-;; Add stubs for rl.lisp functions
-(unless (fboundp 'rl::safe-push-to-game-objects)
-  (defun rl::safe-push-to-game-objects (obj)
-    (bt:with-lock-held (rl::*game-state-lock*)
-      (push obj rl::*game-objects*))))
 
-(unless (fboundp 'rl::safe-push-to-pos-cache)
-  (defun rl::safe-push-to-pos-cache (obj x y)
-    (bt:with-lock-held (rl::*game-state-lock*)
-      (push obj (aref rl::*pos-cache* x y)))))
 
-(unless (fboundp 'rl::safe-remove-from-game-objects)
-  (defun rl::safe-remove-from-game-objects (obj)
-    (bt:with-lock-held (rl::*game-state-lock*)
-      (setf rl::*game-objects* (remove obj rl::*game-objects*)))))
-
-(unless (fboundp 'rl::safe-remove-from-pos-cache)
-  (defun rl::safe-remove-from-pos-cache (obj x y)
-    (bt:with-lock-held (rl::*game-state-lock*)
-      (setf (aref rl::*pos-cache* x y)
-            (remove obj (aref rl::*pos-cache* x y))))))
-
-(unless (fboundp 'rl::safe-clear-game-state)
-  (defun rl::safe-clear-game-state ()
-    (bt:with-lock-held (rl::*game-state-lock*)
-      (setf rl::*game-objects* '())
-      (dotimes (x (array-dimension rl::*pos-cache* 0))
-        (dotimes (y (array-dimension rl::*pos-cache* 1))
-          (setf (aref rl::*pos-cache* x y) '()))))))
-
-(unless (fboundp 'rl::safe-set-pos-cache-at)
-  (defun rl::safe-set-pos-cache-at (x y value)
-    (bt:with-lock-held (rl::*game-state-lock*)
-      (setf (aref rl::*pos-cache* x y) value))))
-
-(unless (fboundp 'rl::chunk-range-to-show)
-  (defun rl::chunk-range-to-show ()
-    ;; Return a simple range for testing
-    (values 0 0 10 10)))
-
-(unless (fboundp 'rl::process-movement)
-  (defun rl::process-movement (dx dy &optional running)
-    (when rl::*player*
-      (setf (rl::dx rl::*player*) dx
-            (rl::dy rl::*player*) dy)
-      (when running
-        (rl::add-to-mix rl::*player* 'rl::running)))))
-
-(unless (fboundp 'rl::process-wait)
-  (defun rl::process-wait ()
-    (when rl::*player*
-      (setf (rl::dx rl::*player*) 0
-            (rl::dy rl::*player*) 0))))
-
-(unless (fboundp 'rl::process-skip-turn)
-  (defun rl::process-skip-turn ()
-    (when rl::*player*
-      (setf (rl::dx rl::*player*) 0
-            (rl::dy rl::*player*) 0
-            (rl::cooldown rl::*player*) 0))))
-
-(unless (fboundp 'rl::process-pickup)
-  (defun rl::process-pickup ()
-    (when rl::*player*
-      (let ((items (remove-if-not (lambda (obj) (typep obj 'rl::item))
-                                  (rl::get-objects-at-pos rl::*player*))))
-        (dolist (item items)
-          (rl::pick-up item rl::*player*)))))
-
-(unless (fboundp 'rl::process-use-item)
-  (defun rl::process-use-item (n)
-    (when (and rl::*player* (< n (length (rl::inventory rl::*player*))))
-      (let ((item (nth n (rl::inventory rl::*player*))))
-        (when (typep item 'rl::useable)
-          (rl::apply-item item rl::*player*)))))
-
-(unless (fboundp 'rl::process-open-door)
-  (defun rl::process-open-door (dx dy)
-    (when rl::*player*
-      (let* ((target-x (+ (rl::x rl::*player*) dx))
-             (target-y (+ (rl::y rl::*player*) dy))
-             (door (find-if (lambda (obj) (typep obj 'rl::door))
-                           (rl::get-objects-at-pos (rl::pos target-x target-y)))))
-        (when door
-          (rl::delete-from-mix door 'rl::solid)))))
-
-(unless (fboundp 'rl::advance-turn)
-  (defun rl::advance-turn ()
-    ;; Update all objects
-    (dolist (obj rl::*game-objects*)
-      (rl::update obj))
-    ;; Increment turn
-    (incf rl::*turn*)))
-
-(unless (fboundp 'rl::random-pos)
-  (defun rl::random-pos ()
-    ;; Return a random position for testing
-    (rl::pos (random 80) (random 25))))
